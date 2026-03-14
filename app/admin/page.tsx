@@ -49,7 +49,7 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-navy font-heading mb-2">Admin Dashboard</h1>
         <p className="text-gray-500 mb-4">Overview of users, debits, credits, transactions, and deposits.</p>
-        <p className="text-sm text-slate-600 mb-8">Use the sidebar on the left to navigate to Users, Finance, Settings, and more.</p>
+        <p className="text-sm text-slate-600 mb-8">Use the menu to navigate to Users, Finance, Settings, and more.</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 7 }).map((_, i) => (
             <CardSkeleton key={i} />
@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
 
       <div className="mb-8 p-4 rounded-xl bg-primary/5 border border-primary/20">
         <h2 className="text-base font-semibold text-navy mb-2">Quick navigation</h2>
-        <p className="text-sm text-slate-600 mb-2">Use the sidebar on the left to move around:</p>
+        <p className="text-sm text-slate-600 mb-2">Use the menu to move around:</p>
         <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
           <li><strong>Users</strong> — Manage clients, add new users, review KYC submissions</li>
           <li><strong>Tools</strong> — System info and site settings</li>

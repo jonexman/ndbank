@@ -24,7 +24,7 @@ export function AdminAuthWrapper({ children }: { children: ReactNode }) {
   if (allowed === false) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="text-center p-8">
+        <div className="text-center p-6 sm:p-8 max-w-md mx-auto">
           <h1 className="text-2xl font-bold text-navy mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">You need administrator privileges to access this area.</p>
           <button

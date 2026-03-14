@@ -24,7 +24,7 @@ export function DataTable<T extends object>({
   striped = false,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card min-w-0">
       <table className="min-w-full divide-y divide-slate-200">
         <thead>
           <tr>

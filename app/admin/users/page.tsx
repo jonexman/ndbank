@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-600">
           Showing {filteredUsers.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filteredUsers.length)} of {filteredUsers.length} client{filteredUsers.length !== 1 ? "s" : ""}
         </p>

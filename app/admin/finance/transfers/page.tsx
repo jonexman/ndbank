@@ -141,7 +141,7 @@ export default function AdminTransfersPage() {
         </select>
       </div>
 
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-600">
           Showing {filteredTransfers.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
           {Math.min(page * PAGE_SIZE, filteredTransfers.length)} of {filteredTransfers.length}

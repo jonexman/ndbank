@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -124,9 +124,22 @@ const adminNav: NavItem[] = [
   },
 ];
 
+const MenuIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -134,93 +147,140 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const isSectionActive = (children: { href: string }[]) =>
     children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
   return (
     <AdminAuthWrapper>
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="w-64 bg-navy flex flex-col shrink-0 overflow-y-auto">
-        <div className="flex items-center gap-2 p-6 border-b border-white/10">
-          <Image src={siteConfig.icon} alt={siteConfig.title} width={96} height={32} className="h-8 w-auto" />
-          <Link href="/admin" className="text-xl font-bold text-white font-heading">
-            Admin
-          </Link>
-        </div>
-        <p className="px-4 py-2 text-xs text-white/50">Use the menu below to navigate the admin area</p>
-        <nav className="flex-1 p-4 overflow-y-auto" aria-label="Admin navigation">
-          <div className="space-y-1">
-            {adminNav.map((item, idx) =>
-              "href" in item && item.href ? (
-                <div key={item.href} className={idx > 0 ? "pt-4 mt-4 border-t border-white/10" : ""}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all border-l-2 -ml-px pl-4 ${
-                      isActive(item.href, item.href === "/admin")
-                        ? "text-white bg-white/10 border-primary-light"
-                        : "border-transparent text-white/85 hover:text-white hover:bg-white/10"
-                    }`}
-                  >
-                    {Icons[item.icon]}
-                    {item.label}
-                  </Link>
-                </div>
-              ) : "children" in item ? (
-                <div key={item.label} className="pt-4 mt-4 border-t border-white/10">
-                  <p
-                    className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
-                      isSectionActive(item.children) ? "text-white" : "text-white/60"
-                    }`}
-                  >
-                    {Icons[item.icon]}
-                    {item.label}
-                  </p>
-                  <div className="space-y-0.5">
-                    {item.children.map((c) => (
-                      <Link
-                        key={c.href}
-                        href={c.href}
-                        className={`flex items-center gap-2 px-4 py-2.5 ml-2 rounded-lg text-sm transition-all border-l-2 pl-4 ${
-                          isActive(c.href)
-                            ? "text-white bg-white/10 border-primary-light"
-                            : "border-transparent text-white/85 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {c.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : null
-            )}
+      <div className="flex min-h-screen bg-slate-50">
+        {/* Mobile overlay */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
+          className={`fixed inset-0 z-40 bg-black/50 transition-opacity md:hidden ${
+            sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        />
+        {/* Sidebar */}
+        <aside
+          className={`
+            fixed md:static inset-y-0 left-0 z-50 w-64 bg-navy flex flex-col shrink-0 overflow-y-auto
+            transform transition-transform duration-300 ease-out
+            md:transform-none
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+          `}
+        >
+          <div className="flex items-center justify-between gap-2 p-4 md:p-6 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <Image src={siteConfig.icon} alt={siteConfig.title} width={96} height={32} className="h-8 w-auto" />
+              <Link href="/admin" className="text-xl font-bold text-white font-heading">
+                Admin
+              </Link>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden p-2 -mr-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+              aria-label="Close menu"
+            >
+              <XIcon />
+            </button>
           </div>
-        </nav>
-        <div className="p-4 border-t border-white/10 space-y-0.5">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {Icons.dashboard}
-            Dashboard
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {Icons.home}
-            Visit main site
-          </Link>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="flex w-full items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {Icons.logout}
-            Log out
-          </button>
+          <p className="px-4 py-2 text-xs text-white/50">Use the menu below to navigate</p>
+          <nav className="flex-1 p-4 overflow-y-auto" aria-label="Admin navigation">
+            <div className="space-y-1">
+              {adminNav.map((item, idx) =>
+                "href" in item && item.href ? (
+                  <div key={item.href} className={idx > 0 ? "pt-4 mt-4 border-t border-white/10" : ""}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all border-l-2 -ml-px pl-4 ${
+                        isActive(item.href, item.href === "/admin")
+                          ? "text-white bg-white/10 border-primary-light"
+                          : "border-transparent text-white/85 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {Icons[item.icon]}
+                      {item.label}
+                    </Link>
+                  </div>
+                ) : "children" in item ? (
+                  <div key={item.label} className="pt-4 mt-4 border-t border-white/10">
+                    <p
+                      className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider ${
+                        isSectionActive(item.children) ? "text-white" : "text-white/60"
+                      }`}
+                    >
+                      {Icons[item.icon]}
+                      {item.label}
+                    </p>
+                    <div className="space-y-0.5">
+                      {item.children.map((c) => (
+                        <Link
+                          key={c.href}
+                          href={c.href}
+                          className={`flex items-center gap-2 px-4 py-2.5 ml-2 rounded-lg text-sm transition-all border-l-2 pl-4 ${
+                            isActive(c.href)
+                              ? "text-white bg-white/10 border-primary-light"
+                              : "border-transparent text-white/85 hover:text-white hover:bg-white/10"
+                          }`}
+                        >
+                          {c.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : null
+              )}
+            </div>
+          </nav>
+          <div className="p-4 border-t border-white/10 space-y-0.5">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              {Icons.dashboard}
+              Dashboard
+            </Link>
+            <Link
+              href="/"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              {Icons.home}
+              Visit main site
+            </Link>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="flex w-full items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              {Icons.logout}
+              Log out
+            </button>
+          </div>
+        </aside>
+        {/* Main content */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="sticky top-0 z-30 md:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -ml-2 text-slate-600 hover:text-navy hover:bg-slate-100 rounded-lg"
+              aria-label="Open menu"
+            >
+              <MenuIcon />
+            </button>
+            <Link href="/admin" className="text-lg font-bold text-navy font-heading truncate">
+              Admin
+            </Link>
+          </header>
+          <main className="flex-1 overflow-auto min-h-0">
+            <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+          </main>
         </div>
-      </aside>
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 lg:p-8">{children}</div>
-      </main>
-    </div>
+      </div>
     </AdminAuthWrapper>
   );
 }
