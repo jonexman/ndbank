@@ -20,7 +20,13 @@ export default function SignInPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ login, password }),
       });
-      const data = await res.json();
+      let data: { error?: string } = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: "Sign in failed" };
+      }
       if (!res.ok) {
         setError(data.error ?? "Sign in failed");
         return;
@@ -53,6 +59,7 @@ export default function SignInPage() {
             type="text"
             value={login}
             onChange={(e) => setLogin(e.target.value)}
+            autoComplete="username"
             required
             disabled={loading}
           />
@@ -61,6 +68,7 @@ export default function SignInPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             required
             disabled={loading}
           />

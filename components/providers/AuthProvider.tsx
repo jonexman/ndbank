@@ -28,7 +28,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(true);
     fetch("/api/auth/session")
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          return text ? JSON.parse(text) : { user: null };
+        } catch {
+          return { user: null };
+        }
+      })
       .then((data) => {
         if (data.user?.id) {
           setUserId(data.user.id);
