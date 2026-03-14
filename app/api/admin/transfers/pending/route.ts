@@ -13,22 +13,25 @@ export async function GET() {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  const { data: pending = [], error } = await supabase
+  const { data, error } = await supabase
     .from("transfer_otps")
     .select("*")
     .eq("status", "pending")
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
 
+  const pending: Array<{ user_id: string; id: string; tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; status: string; created_at: string; expires_at: string }> = data ?? [];
+
   const users = new Map<string, { email: string; full_name: string }>();
   for (const p of pending) {
     if (!users.has(p.user_id)) {
-      const { data } = await supabase
+      const { data: userData } = await supabase
         .from("users")
         .select("email, full_name")
         .eq("id", p.user_id)
         .single();
-      if (data) users.set(p.user_id, { email: data.email, full_name: data.full_name });
+      const u = userData as { email: string; full_name: string } | null;
+      if (u) users.set(p.user_id, { email: u.email, full_name: u.full_name });
     }
   }
 
@@ -36,7 +39,7 @@ export async function GET() {
     return NextResponse.json({ error: error.message, pending: [] });
   }
 
-  const list = (pending as Array<{ id: string; user_id: string; tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; status: string; created_at: string; expires_at: string }>).map((p) => ({
+  const list = pending.map((p) => ({
     id: p.id,
     tx_ref: p.tx_ref,
     user_id: p.user_id,

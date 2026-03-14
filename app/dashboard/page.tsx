@@ -185,11 +185,16 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.tx_date).getTime() - new Date(a.tx_date).getTime())
     .slice(0, 3);
 
-  const handleCopyAccount = () => {
+  const handleCopyAccount = async () => {
     const acc = user.account_number ?? user.bank_number;
-    if (navigator.clipboard?.writeText(acc)) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(acc);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // clipboard failed
     }
   };
 

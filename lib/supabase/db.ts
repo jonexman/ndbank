@@ -285,12 +285,11 @@ export async function getTransferOtpByTxRef(
     .from("transfer_otps")
     .select("*")
     .eq("tx_ref", txRef)
-    .eq("status", "pending")
-    .single();
+    .eq("status", "pending");
   if (userId) {
     q = q.eq("user_id", userId);
   }
-  const { data, error } = await q;
+  const { data, error } = await q.single();
   if (error || !data) return null;
   return data as DbTransferOtp;
 }

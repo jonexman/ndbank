@@ -66,7 +66,8 @@ export async function GET(
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
-    pendingTransfers = (pt ?? []).map((r) => ({
+    const rows = (pt ?? []) as Array<{ tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string }>;
+    pendingTransfers = rows.map((r) => ({
       tx_ref: r.tx_ref,
       otp_code: r.otp_code,
       recipient_account: r.recipient_account,
