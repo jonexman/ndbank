@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { PageHeader, PageLoader } from "@/components/ui";
 import { siteConfig } from "@/lib/siteConfig";
-import { useAuth } from "@/components/providers/AuthProvider";
 
-export default function ReceiptPage() {
+export default function AdminReceiptPage() {
   const params = useParams();
   const txRef = params.tx_ref as string;
-  const { userId, isLoading } = useAuth();
-  const router = useRouter();
   const [data, setData] = useState<{
     tx_ref: string;
     principal: number;
@@ -21,33 +18,24 @@ export default function ReceiptPage() {
     currency: string;
     status?: string;
     recipient_account?: string | null;
+    bank_holder?: string | null;
   } | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [copiedRef, setCopiedRef] = useState(false);
 
   useEffect(() => {
-    if (!txRef || !userId) {
-      if (!userId && !isLoading) router.push("/dashboard/signin");
-      return;
-    }
-    setDataLoading(true);
-    fetch("/api/dashboard/user")
+    if (!txRef) return;
+    setLoading(true);
+    fetch(`/api/admin/transfers/${encodeURIComponent(txRef)}`)
       .then((r) => {
-        if (r.status === 401) {
-          router.push("/dashboard/signin");
-          return null;
-        }
+        if (r.status === 404) return null;
         return r.json();
       })
-      .then((d) => {
-        if (!d) return;
-        const tx = (d.transactions ?? []).find((t: { tx_ref: string }) => t.tx_ref === txRef);
-        const pending = (d.pendingTransfers ?? []).find((t: { tx_ref: string }) => t.tx_ref === txRef);
-        setData(tx ?? pending ?? null);
-      })
+      .then((d) => (d?.error ? null : d))
+      .then(setData)
       .catch(() => setData(null))
-      .finally(() => setDataLoading(false));
-  }, [txRef, userId, isLoading, router]);
+      .finally(() => setLoading(false));
+  }, [txRef]);
 
   const copyRef = () => {
     if (!data?.tx_ref) return;
@@ -57,40 +45,21 @@ export default function ReceiptPage() {
     });
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
-  const handleShare = async () => {
-    if (!data) return;
-    const text = `Transfer ${data.tx_type}: ${data.tx_type === "credit" ? "+" : "-"}${data.principal.toFixed(2)} ${data.currency}\nRef: ${data.tx_ref}\n${siteConfig.title}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Transfer Receipt",
-          text,
-        });
-      } catch {
-        navigator.clipboard?.writeText(text);
-      }
-    } else {
-      navigator.clipboard?.writeText(text);
-    }
-  };
-
-  if (!userId && !isLoading) return null;
-  if (dataLoading && !data) {
+  if (loading && !data) {
     return (
       <div>
-        <PageHeader title="Transaction Details" backHref="/dashboard" subtitle="Loading..." />
+        <PageHeader title="Transaction Receipt" backHref="/admin/finance/transfers" subtitle="Loading..." />
         <PageLoader message="Loading receipt" />
       </div>
     );
   }
+
   if (!data) {
     return (
       <div>
-        <PageHeader title="Transaction Details" backHref="/dashboard" subtitle="Transaction not found." />
+        <PageHeader title="Transaction Receipt" backHref="/admin/finance/transfers" subtitle="Transaction not found." />
       </div>
     );
   }
@@ -103,18 +72,16 @@ export default function ReceiptPage() {
   return (
     <div className="max-w-lg mx-auto print:max-w-none">
       <div className="print:hidden">
-        <PageHeader title="Transaction Details" backHref="/dashboard/transfer/history" />
+        <PageHeader title="Transaction Receipt" backHref="/admin/finance/transfers" subtitle={data.tx_ref} />
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden print:shadow-none print:border">
-        {/* Logo */}
         <div className="flex justify-center pt-8 pb-4">
           <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center overflow-hidden">
             <Image src={siteConfig.icon} alt={siteConfig.title} width={48} height={48} className="object-contain" />
           </div>
         </div>
 
-        {/* Transfer summary */}
         <div className="px-6 pb-6 text-center">
           <p className="text-sm text-slate-500 mb-1">
             {data.tx_type === "debit"
@@ -140,7 +107,6 @@ export default function ReceiptPage() {
           </p>
         </div>
 
-        {/* Timeline (simplified) */}
         <div className="px-6 pb-4 border-t border-slate-100">
           <div className="flex items-center gap-2 pt-4">
             <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
@@ -165,7 +131,6 @@ export default function ReceiptPage() {
           )}
         </div>
 
-        {/* Financial breakdown */}
         <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100">
           <div className="flex justify-between text-sm py-2">
             <span className="text-slate-600">Amount</span>
@@ -187,12 +152,11 @@ export default function ReceiptPage() {
           </div>
         </div>
 
-        {/* Transaction details */}
         <div className="px-6 py-6 space-y-4 border-t border-slate-100">
           {data.recipient_account && data.tx_type === "debit" && (
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Recipient details</p>
-              <p className="font-medium">{siteConfig.title} | {data.recipient_account}</p>
+              <p className="font-medium">{siteConfig.title} | {data.recipient_account}{data.bank_holder ? ` (${data.bank_holder})` : ""}</p>
             </div>
           )}
           <div>
@@ -202,7 +166,7 @@ export default function ReceiptPage() {
               <button
                 type="button"
                 onClick={copyRef}
-                className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700 print:hidden"
                 title={copiedRef ? "Copied" : "Copy"}
               >
                 {copiedRef ? (
@@ -233,32 +197,14 @@ export default function ReceiptPage() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="px-6 pb-8 space-y-3 print:hidden">
-          <div className="flex justify-center gap-6 text-sm">
-            <Link href="/dashboard/transfer" className="font-medium text-primary hover:underline">
-              Transfer again
-            </Link>
-            <Link href="/contact" className="font-medium text-slate-600 hover:text-slate-800">
-              Report issue
-            </Link>
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="flex-1 py-3 rounded-xl border border-primary/30 text-primary font-medium hover:bg-primary/5 transition-colors"
-            >
-              Share receipt
-            </button>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="flex-1 py-3 rounded-xl bg-primary text-white font-medium hover:opacity-95 transition-opacity"
-            >
-              Print / Save
-            </button>
-          </div>
+        <div className="px-6 pb-8 print:hidden">
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="w-full py-3 rounded-xl bg-primary text-white font-medium hover:opacity-95"
+          >
+            Print / Save
+          </button>
         </div>
       </div>
     </div>

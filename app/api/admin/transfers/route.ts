@@ -40,6 +40,7 @@ export async function GET() {
       amount: t.amount,
       currency: t.currency,
       tx_type: t.type,
+      status: t.status ?? "completed",
       tx_date: t.created_at,
       tx_region: t.tx_region ?? "local",
       bank_account: t.recipient_account ?? acc?.account_number,
