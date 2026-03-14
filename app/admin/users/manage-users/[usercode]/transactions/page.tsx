@@ -86,6 +86,12 @@ export default function ClientTransactionsPage() {
             Credentials
           </Link>
           <Link
+            href={`/admin/users/manage-users/${usercode}/activity`}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+          >
+            Activity
+          </Link>
+          <Link
             href={`/admin/users/manage-users/${usercode}/accounts`}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
           >

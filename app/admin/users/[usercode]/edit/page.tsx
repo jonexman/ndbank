@@ -164,6 +164,12 @@ export default function EditUserPage() {
           >
             Banking credentials
           </Link>
+          <Link
+            href={`/admin/users/manage-users/${usercode}/activity`}
+            className="px-4 py-2 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5"
+          >
+            Login activity
+          </Link>
         </div>
       </div>
 

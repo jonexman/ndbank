@@ -164,6 +164,12 @@ export default function ManageAccountsPage() {
         />
         <div className="flex flex-wrap gap-2">
           <Link
+            href={`/admin/users/manage-users/${usercode}/activity`}
+            className="inline-flex px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50"
+          >
+            Activity
+          </Link>
+          <Link
             href={`/admin/users/manage-users/${usercode}/transactions`}
             className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
           >

@@ -216,6 +216,12 @@ export default function AdminUsersPage() {
                   Credentials
                 </Link>
                 <Link
+                  href={`/admin/users/manage-users/${usercode(u)}/activity`}
+                  className="text-slate-600 text-sm font-medium hover:underline"
+                >
+                  Activity
+                </Link>
+                <Link
                   href={`/admin/users/manage-users/${usercode(u)}/transactions`}
                   className="text-slate-600 text-sm font-medium hover:underline"
                 >

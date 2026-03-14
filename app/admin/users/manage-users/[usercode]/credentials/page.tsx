@@ -308,10 +308,10 @@ export default function CredentialsPage() {
         />
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/admin/users/manage-users/${usercode}/transactions`}
+            href={`/admin/users/manage-users/${usercode}/activity`}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
           >
-            <span>Transactions</span>
+            <span>Activity</span>
             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

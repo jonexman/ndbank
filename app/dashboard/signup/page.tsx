@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Card, Input, Button, PageHeader, Select, Spinner } from "@/components/ui";
+import { COUNTRIES as COUNTRY_LIST } from "@/lib/admin/options";
 
 const GENDERS = [
   { value: "", label: "-- Please select one --" },
@@ -44,18 +45,7 @@ const ACCOUNT_TYPES = [
 
 const COUNTRIES = [
   { value: "", label: "-- Select country --" },
-  { value: "US", label: "United States" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "NG", label: "Nigeria" },
-  { value: "AF", label: "Afghanistan" },
-  { value: "CA", label: "Canada" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "IN", label: "India" },
-  { value: "ZA", label: "South Africa" },
-  { value: "GH", label: "Ghana" },
-  { value: "KE", label: "Kenya" },
-  { value: "other", label: "Other" },
+  ...COUNTRY_LIST.map((c) => ({ value: c.iso_2, label: c.name })),
 ];
 
 function SectionHeading({ children }: { children: React.ReactNode }) {

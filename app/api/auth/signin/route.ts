@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getClientIp, getClientUserAgent } from "@/lib/utils/ip";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,7 +37,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-    return NextResponse.json({
+  const userId = data.user?.id;
+  if (userId) {
+    const admin = createAdminClient();
+    if (admin) {
+      const ip = getClientIp(req);
+      const userAgent = getClientUserAgent(req);
+      await (admin.from("user_activity_log") as any).insert({
+        user_id: userId,
+        event_type: "login",
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+    }
+  }
+
+  return NextResponse.json({
       userId: data.user?.id,
       email: data.user?.email,
     });

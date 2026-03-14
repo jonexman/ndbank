@@ -140,6 +140,16 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState<{ email: string | null; fullName: string | null } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.error) setAdminUser({ email: d.email ?? null, fullName: d.fullName ?? null });
+      })
+      .catch(() => {});
+  }, []);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -188,6 +198,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <XIcon />
             </button>
           </div>
+          {adminUser && (
+            <div className="px-4 py-3 border-b border-white/10">
+              <p className="text-xs text-white/50 mb-0.5">Logged in as</p>
+              <p className="text-sm font-medium text-white truncate" title={adminUser.email ?? undefined}>
+                {adminUser.fullName || adminUser.email || "Admin"}
+              </p>
+              {adminUser.email && (
+                <p className="text-xs text-white/60 truncate" title={adminUser.email}>
+                  {adminUser.email}
+                </p>
+              )}
+            </div>
+          )}
           <p className="px-4 py-2 text-xs text-white/50">Use the menu below to navigate</p>
           <nav className="flex-1 p-4 overflow-y-auto" aria-label="Admin navigation">
             <div className="space-y-1">
@@ -263,18 +286,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </aside>
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-30 md:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 -ml-2 text-slate-600 hover:text-navy hover:bg-slate-100 rounded-lg"
-              aria-label="Open menu"
-            >
-              <MenuIcon />
-            </button>
-            <Link href="/admin" className="text-lg font-bold text-navy font-heading truncate">
-              Admin
-            </Link>
+          <header className="sticky top-0 z-30 md:hidden flex items-center justify-between gap-4 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 -ml-2 text-slate-600 hover:text-navy hover:bg-slate-100 rounded-lg shrink-0"
+                aria-label="Open menu"
+              >
+                <MenuIcon />
+              </button>
+              <Link href="/admin" className="text-lg font-bold text-navy font-heading truncate">
+                Admin
+              </Link>
+            </div>
+            {adminUser && (
+              <span className="text-sm text-slate-500 truncate max-w-[140px]" title={adminUser.email ?? undefined}>
+                {adminUser.fullName || adminUser.email}
+              </span>
+            )}
           </header>
           <main className="flex-1 overflow-auto min-h-0">
             <div className="p-4 sm:p-6 lg:p-8">{children}</div>
