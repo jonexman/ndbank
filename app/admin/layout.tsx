@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { siteConfig } from "@/lib/siteConfig";
 import { AdminAuthWrapper } from "@/components/admin/AdminAuthWrapper";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const Icons = {
   overview: (
@@ -53,6 +54,11 @@ const Icons = {
   home: (
     <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+  ),
+  logout: (
+    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
   ),
 };
@@ -120,6 +126,7 @@ const adminNav: NavItem[] = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -200,6 +207,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             {Icons.home}
             Visit main site
           </Link>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="flex w-full items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            {Icons.logout}
+            Log out
+          </button>
         </div>
       </aside>
       <main className="flex-1 overflow-auto">

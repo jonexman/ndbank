@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Input, Button, PageHeader, Spinner } from "@/components/ui";
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +34,11 @@ export default function SignInPage() {
         setError(data.error ?? "Sign in failed");
         return;
       }
-      window.location.href = "/dashboard";
+      const target =
+        redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+          ? redirectTo
+          : "/dashboard";
+      window.location.href = target;
     } finally {
       setLoading(false);
     }
