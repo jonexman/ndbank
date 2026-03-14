@@ -65,14 +65,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User creation failed" }, { status: 500 });
   }
 
-  const { data: dbUser } = await admin
-    .from("users")
+  const { data: userRow } = await (admin.from("users") as any)
     .select("usercode, bank_number")
     .eq("id", userId)
     .single();
+  const dbUser = userRow as { usercode?: string; bank_number?: string } | null;
 
-  await admin
-    .from("users")
+  // Admin client has no DB schema types; update payload is valid at runtime
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin.from("users") as any)
     .update({
       can_transfer: !!canTransfer,
       updated_at: new Date().toISOString(),
@@ -81,8 +82,7 @@ export async function POST(req: NextRequest) {
 
   const initialBalance = Math.max(0, parseFloat(String(balance)) || 0);
   if (initialBalance > 0) {
-    await admin
-      .from("accounts")
+    await (admin.from("accounts") as any)
       .update({ balance: initialBalance })
       .eq("user_id", userId)
       .eq("currency", currency || "USD");
