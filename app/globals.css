@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-slate-900;
+  }
+}
+
+@layer components {
+  .form-alert-success {
+    @apply p-4 rounded-xl text-sm bg-success-light text-success-dark;
+  }
+  .form-alert-error {
+    @apply p-4 rounded-xl text-sm bg-error-light text-error-dark;
+  }
+  .balance-display {
+    @apply text-display-md tracking-tight text-navy font-heading;
+  }
+}
+
+/* Legacy ab-* classes kept for gradual migration */
+.ab-btn-primary {
+  @apply inline-flex items-center justify-center px-5 py-2.5 rounded-full font-semibold text-sm bg-gradient-to-r from-primary-dark to-primary text-white transition-all hover:opacity-95 hover:shadow-lg;
+}
+
+.ab-btn-secondary {
+  @apply inline-flex items-center justify-center px-5 py-2 rounded-full font-medium text-sm border border-white/40 text-white transition-colors hover:bg-white/10;
+}
