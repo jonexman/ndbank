@@ -8,9 +8,16 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ usercode: string }> }
 ) {
-  const { authorized, supabase } = await requireAdmin();
+  const body = await req.json();
+  const { roles } = body;
+  const wantsSuperAdmin = Array.isArray(roles) && roles.includes("super-admin");
+
+  const { authorized, supabase, isSuperAdmin } = await requireAdmin();
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (wantsSuperAdmin && !isSuperAdmin) {
+    return NextResponse.json({ error: "Only super-admin can assign super-admin role" }, { status: 403 });
   }
 
   const { usercode } = await params;
@@ -18,9 +25,6 @@ export async function POST(
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
-
-  const body = await req.json();
-  const { roles } = body;
 
   if (!Array.isArray(roles)) {
     return NextResponse.json({ error: "roles must be an array" }, { status: 400 });

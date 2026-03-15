@@ -32,20 +32,20 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
+  const pathname = request.nextUrl.pathname;
+  const isDashboard = pathname.startsWith("/dashboard");
   const isSignInOrSignUp =
-    request.nextUrl.pathname === "/dashboard/signin" ||
-    request.nextUrl.pathname === "/dashboard/signup";
+    pathname === "/dashboard/signin" || pathname === "/dashboard/signup";
 
   if (isDashboard && !isSignInOrSignUp && !user) {
     const signInUrl = new URL("/dashboard/signin", request.url);
     return NextResponse.redirect(signInUrl);
   }
 
-  const isAdmin = request.nextUrl.pathname.startsWith("/admin");
+  const isAdmin = pathname.startsWith("/admin");
   if (isAdmin && !user) {
     const signInUrl = new URL("/dashboard/signin", request.url);
-    signInUrl.searchParams.set("redirect", request.nextUrl.pathname);
+    signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
   }
 

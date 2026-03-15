@@ -3,19 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, PageHeader, DataTable, PageLoader } from "@/components/ui";
 import { useAuth } from "@/components/providers/AuthProvider";
 
-const MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - i);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return { value: `${y}-${m}`, label: d.toLocaleDateString("en-US", { year: "numeric", month: "long" }) };
-});
-
 export default function AccountStatementPage() {
+  const t = useTranslations("accountStatement");
+  const locale = useLocale();
   const { userId, isLoading } = useAuth();
+  const MONTHS = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return { value: `${y}-${m}`, label: d.toLocaleDateString(locale === "ar" ? "ar" : "en-US", { year: "numeric", month: "long" }) };
+  });
   const router = useRouter();
   const [data, setData] = useState<{
     user?: { firstname: string; lastname: string; bank_number: string };
@@ -43,8 +45,8 @@ export default function AccountStatementPage() {
   if (!data?.user) {
     return (
       <div>
-        <PageHeader title="Account Statement" backHref="/dashboard" subtitle="Loading..." />
-        <PageLoader message="Loading statement" />
+        <PageHeader title={t("title")} backHref="/dashboard" subtitle={t("loading")} />
+        <PageLoader message={t("loadingStatement")} />
       </div>
     );
   }
@@ -53,9 +55,9 @@ export default function AccountStatementPage() {
 
   return (
     <div>
-      <PageHeader title="Account Statement" backHref="/dashboard" subtitle={`${user.firstname} ${user.lastname} - ${user.bank_number}`} />
+      <PageHeader title={t("title")} backHref="/dashboard" subtitle={`${user.firstname} ${user.lastname} - ${user.bank_number}`} />
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-slate-600 mb-2">View by month</h3>
+        <h3 className="text-sm font-medium text-slate-600 mb-2">{t("viewByMonth")}</h3>
         <div className="flex flex-wrap gap-2">
           {MONTHS.slice(0, 6).map((m) => (
             <Link
@@ -73,7 +75,7 @@ export default function AccountStatementPage() {
           columns={[
             {
               key: "tx_ref",
-              header: "Reference",
+              header: t("reference"),
               render: (t) => (
                 <Link href={`/dashboard/receipt/${t.tx_ref}`} className="font-medium text-primary hover:underline">
                   {String(t.tx_ref).slice(0, 14)}...
@@ -82,19 +84,19 @@ export default function AccountStatementPage() {
             },
             {
               key: "principal",
-              header: "Amount",
+              header: t("amount"),
               render: (t) => (
                 <span className={t.tx_type === "credit" ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
                   {t.tx_type === "credit" ? "+" : "-"}{t.principal.toFixed(2)} {t.currency}
                 </span>
               ),
             },
-            { key: "tx_type", header: "Type", render: (t) => String(t.tx_type).toUpperCase() },
-            { key: "tx_date", header: "Date", render: (t) => new Date(t.tx_date).toLocaleString() },
+            { key: "tx_type", header: t("type"), render: (row) => String(row.tx_type).toUpperCase() },
+            { key: "tx_date", header: t("date"), render: (row) => new Date(row.tx_date).toLocaleString(locale === "ar" ? "ar" : "en-US") },
           ]}
           data={transactions}
           keyExtractor={(t) => t.tx_ref}
-          emptyMessage="No transactions in this period."
+          emptyMessage={t("noTransactions")}
         />
       </Card>
     </div>

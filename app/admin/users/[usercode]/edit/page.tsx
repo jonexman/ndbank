@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Card, Input, Select, Button, PageHeader } from "@/components/ui";
+import { Card, Input, Select, Button, PageHeader, Switch } from "@/components/ui";
 
 const ROLES = ["member", "administrator", "super-admin"];
 
@@ -19,6 +19,7 @@ export default function EditUserPage() {
       lastname: string;
       bankNumber: string | null;
       roles: string[];
+      loginDisabled?: boolean;
       register_time: string;
     };
     profile: Record<string, string>;
@@ -31,6 +32,7 @@ export default function EditUserPage() {
   } | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [roles, setRoles] = useState<string[]>([]);
+  const [loginDisabled, setLoginDisabled] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -52,6 +54,7 @@ export default function EditUserPage() {
         }
         setData(d);
         setRoles(d.user?.roles ?? ["member"]);
+        setLoginDisabled(!!d.user?.loginDisabled);
         const p = d.profile ?? {};
         setForm({
           email: d.user?.email ?? "",
@@ -104,6 +107,7 @@ export default function EditUserPage() {
           nok_name: form.nok_name || undefined,
           nok_relationship: form.nok_relationship || undefined,
           nok_address: form.nok_address || undefined,
+          loginDisabled,
           ...(isSuperAdmin && { roles }),
         }),
       });
@@ -304,8 +308,22 @@ export default function EditUserPage() {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {isSuperAdmin && (
-            <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <h3 className="text-base font-semibold text-navy mb-4">Account access</h3>
+              <Switch
+                label="Disable login"
+                hint="When on, this user cannot sign in. Existing sessions are invalidated."
+                checked={loginDisabled}
+                onChange={(v) => setLoginDisabled(v)}
+              />
+              {loginDisabled && (
+                <p className="mt-2 text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  Login is disabled for this user. They will be signed out and cannot sign in until you turn this off.
+                </p>
+              )}
+            </Card>
+            {isSuperAdmin && (
               <Card>
                 <h3 className="text-base font-semibold text-navy mb-4">Access control</h3>
                 <div className="flex flex-wrap gap-4">
@@ -322,8 +340,8 @@ export default function EditUserPage() {
                   ))}
                 </div>
               </Card>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Submit */}
           <div className={isSuperAdmin ? "lg:col-span-1" : "lg:col-span-3"}>

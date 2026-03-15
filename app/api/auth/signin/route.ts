@@ -39,6 +39,21 @@ export async function POST(req: NextRequest) {
 
   const userId = data.user?.id;
   if (userId) {
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("login_disabled")
+      .eq("id", userId)
+      .single();
+    if ((dbUser as { login_disabled?: boolean } | null)?.login_disabled) {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { error: "Your account has been disabled. Please contact support." },
+        { status: 403 }
+      );
+    }
+  }
+
+  if (userId) {
     const admin = createAdminClient();
     if (admin) {
       const ip = getClientIp(req);

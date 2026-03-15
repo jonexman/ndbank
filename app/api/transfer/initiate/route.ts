@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserById,
   getAccountByUserId,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/supabase/db";
 import { verifyPin } from "@/lib/auth/pin";
 
-const OTP_EXPIRY_MINUTES = 10;
+const OTP_EXPIRY_HOURS = 24;
 
 type InitiateBody = {
   tx_region: string;
@@ -59,8 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "error", message: "Invalid PIN." }, { status: 400 });
   }
 
-  const isInternational = body.tx_region === "international";
-  const validAccount = isInternational
+  const validAccount = (body.tx_region === "international")
     ? body.bank_account.length <= 34 && /^[A-Za-z0-9]+$/.test(body.bank_account)
     : body.bank_account.length <= 20 && /^[0-9]+$/.test(body.bank_account);
   if (!validAccount) {
@@ -75,10 +75,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "error", message: "Account not found." }, { status: 404 });
   }
 
+  const isInternational = body.tx_region === "international";
+  let chargePct = 0;
+  const admin = createAdminClient();
+  if (admin) {
+    const { data: rows } = await admin
+      .from("site_options")
+      .select("key, value")
+      .in("key", ["local_transfer_charge_pct", "international_transfer_charge_pct"]);
+    type SiteOptionRow = { key: string; value: string | null };
+    const opts: Record<string, string> = {};
+    for (const r of (rows ?? []) as SiteOptionRow[]) opts[r.key] = r.value ?? "0";
+    chargePct = parseFloat(isInternational ? opts.international_transfer_charge_pct ?? "0" : opts.local_transfer_charge_pct ?? "0") || 0;
+  }
+  const feeAmount = Math.round(body.amount * (chargePct / 100) * 100) / 100;
+  const totalDebit = body.amount + feeAmount;
+
   const balance = Number(senderAccount.balance);
-  if (balance < body.amount) {
+  if (balance < totalDebit) {
     return NextResponse.json(
-      { status: "error", message: `Insufficient funds. You need a minimum of ${body.amount.toFixed(2)} ${body.currency} to initiate this transaction.` },
+      { status: "error", message: `Insufficient funds. You need ${totalDebit.toFixed(2)} ${body.currency} (${body.amount.toFixed(2)} + ${feeAmount.toFixed(2)} fee) to initiate this transfer.` },
       { status: 400 }
     );
   }
@@ -87,7 +103,7 @@ export async function POST(req: NextRequest) {
   const hasCodes = userCodes.length > 0;
 
   const txRef = `TNX${Date.now().toString(16).toUpperCase()}`;
-  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_HOURS * 60 * 60 * 1000).toISOString();
 
   const { data: otpRow, error: insertError } = await createTransferOtp(supabase, {
     user_id: authUser.id,
@@ -98,6 +114,8 @@ export async function POST(req: NextRequest) {
     currency: body.currency,
     tx_region: body.tx_region,
     expires_at: expiresAt,
+    fee_amount: feeAmount,
+    user_completed_at: hasCodes ? null : new Date().toISOString(),
   });
 
   if (insertError || !otpRow) {
@@ -115,6 +133,9 @@ export async function POST(req: NextRequest) {
       tx_ref: txRef,
       requires_codes: hasCodes,
       code_types: codeTypes,
+      fee_amount: feeAmount,
+      charge_pct: chargePct,
+      total_debit: totalDebit,
       message: hasCodes
         ? `Enter your ${codeTypes.map((c) => c.type).join(", ")} code(s) to complete the transfer.`
         : "Transfer submitted for admin approval.",

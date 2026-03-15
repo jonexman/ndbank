@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, PageHeader, DataTable, PageLoader } from "@/components/ui";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function MonthlyStatementPage() {
+  const t = useTranslations("accountStatement");
+  const locale = useLocale();
   const params = useParams();
   const month = params.month as string;
   const { userId, isLoading } = useAuth();
@@ -34,15 +37,15 @@ export default function MonthlyStatementPage() {
   }, [month, userId, isLoading, router]);
 
   const monthLabel = month
-    ? new Date(month + "-01").toLocaleDateString("en-US", { year: "numeric", month: "long" })
-    : "Unknown";
+    ? new Date(month + "-01").toLocaleDateString(locale === "ar" ? "ar" : "en-US", { year: "numeric", month: "long" })
+    : t("unknown");
 
   if (!userId && !isLoading) return null;
   if (!data?.user) {
     return (
       <div>
-        <PageHeader title={`Statement - ${monthLabel}`} backHref="/dashboard/account/statement" subtitle="Loading..." />
-        <PageLoader message="Loading statement" />
+        <PageHeader title={t("statementMonth", { month: monthLabel })} backHref="/dashboard/account/statement" subtitle={t("loading")} />
+        <PageLoader message={t("loadingStatement")} />
       </div>
     );
   }
@@ -52,7 +55,7 @@ export default function MonthlyStatementPage() {
   return (
     <div>
       <PageHeader
-        title={`Statement - ${monthLabel}`}
+        title={t("statementMonth", { month: monthLabel })}
         backHref="/dashboard/account/statement"
         subtitle={`${user.firstname} ${user.lastname} - ${user.bank_number}`}
       />
@@ -61,7 +64,7 @@ export default function MonthlyStatementPage() {
           columns={[
             {
               key: "tx_ref",
-              header: "Reference",
+              header: t("reference"),
               render: (t) => (
                 <Link href={`/dashboard/receipt/${t.tx_ref}`} className="font-medium text-primary hover:underline">
                   {String(t.tx_ref).slice(0, 14)}...
@@ -70,19 +73,19 @@ export default function MonthlyStatementPage() {
             },
             {
               key: "principal",
-              header: "Amount",
+              header: t("amount"),
               render: (t) => (
                 <span className={t.tx_type === "credit" ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
                   {t.tx_type === "credit" ? "+" : "-"}{t.principal.toFixed(2)} {t.currency}
                 </span>
               ),
             },
-            { key: "tx_type", header: "Type", render: (t) => String(t.tx_type).toUpperCase() },
-            { key: "tx_date", header: "Date", render: (t) => new Date(t.tx_date).toLocaleString() },
+            { key: "tx_type", header: t("type"), render: (row) => String(row.tx_type).toUpperCase() },
+            { key: "tx_date", header: t("date"), render: (row) => new Date(row.tx_date).toLocaleString(locale === "ar" ? "ar" : "en-US") },
           ]}
           data={transactions}
           keyExtractor={(t) => t.tx_ref}
-          emptyMessage="No transactions in this month."
+          emptyMessage={t("noTransactionsMonth")}
         />
       </Card>
     </div>

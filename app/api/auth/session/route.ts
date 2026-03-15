@@ -8,6 +8,18 @@ export async function GET() {
     if (error || !user) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("login_disabled")
+      .eq("id", user.id)
+      .single();
+    if ((dbUser as { login_disabled?: boolean } | null)?.login_disabled) {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { user: null, loginDisabled: true, error: "Your account has been disabled. Please contact support." },
+        { status: 403 }
+      );
+    }
     return NextResponse.json({
       user: {
         id: user.id,

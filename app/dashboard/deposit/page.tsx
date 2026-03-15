@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, Input, Select, Button, PageHeader } from "@/components/ui";
 
 const PAYMENT_METHODS = [
@@ -11,6 +12,7 @@ const PAYMENT_METHODS = [
 type DepositType = "bank" | "cheque";
 
 export default function DepositPage() {
+  const t = useTranslations("deposit");
   const [depositType, setDepositType] = useState<DepositType>("bank");
   const [methodId, setMethodId] = useState(1);
   const [usdAmount, setUsdAmount] = useState("");
@@ -39,7 +41,7 @@ export default function DepositPage() {
       setUsdAmount("");
       setRate("");
     } else {
-      setStatus({ type: "error", msg: json.message || "Deposit failed" });
+      setStatus({ type: "error", msg: json.message || t("depositFailed") });
     }
   };
 
@@ -63,13 +65,13 @@ export default function DepositPage() {
       setChequeAmount("");
       setPayee("");
     } else {
-      setStatus({ type: "error", msg: json.message || "Cheque deposit failed" });
+      setStatus({ type: "error", msg: json.message || t("chequeDepositFailed") });
     }
   };
 
   return (
     <div>
-      <PageHeader title="Deposit" backHref="/dashboard" subtitle="Add funds to your account" />
+      <PageHeader title={t("title")} backHref="/dashboard" subtitle={t("subtitle")} />
 
       {/* Deposit type tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-slate-100 max-w-lg mb-6">
@@ -80,7 +82,7 @@ export default function DepositPage() {
             depositType === "bank" ? "bg-white text-navy shadow-sm" : "text-slate-600 hover:text-navy"
           }`}
         >
-          Bank / Crypto
+          {t("bankCrypto")}
         </button>
         <button
           type="button"
@@ -89,7 +91,7 @@ export default function DepositPage() {
             depositType === "cheque" ? "bg-white text-navy shadow-sm" : "text-slate-600 hover:text-navy"
           }`}
         >
-          Cheque
+          {t("cheque")}
         </button>
       </div>
 
@@ -102,13 +104,13 @@ export default function DepositPage() {
               </div>
             )}
             <Select
-              label="Payment Method"
+              label={t("paymentMethod")}
               value={String(methodId)}
               onChange={(e) => setMethodId(Number(e.target.value))}
               options={PAYMENT_METHODS.map((m) => ({ value: String(m.id), label: m.name }))}
             />
             <Input
-              label="USD Amount"
+              label={t("usdAmount")}
               type="number"
               step="0.01"
               value={usdAmount}
@@ -118,7 +120,7 @@ export default function DepositPage() {
             />
             {methodId === 1 && (
               <Input
-                label="BTC Rate (optional)"
+                label={t("btcRateOptional")}
                 type="number"
                 step="0.00000001"
                 value={rate}
@@ -127,7 +129,7 @@ export default function DepositPage() {
               />
             )}
             <Button type="submit" fullWidth>
-              Submit Deposit
+              {t("submitDeposit")}
             </Button>
           </form>
         ) : (
@@ -138,15 +140,15 @@ export default function DepositPage() {
               </div>
             )}
             <Input
-              label="Cheque Number"
+              label={t("chequeNumber")}
               value={chequeNumber}
               onChange={(e) => setChequeNumber(e.target.value)}
-              placeholder="e.g. CHQ001234"
+              placeholder={t("chequeNumberPlaceholder")}
               required
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Amount"
+                label={t("amount")}
                 type="number"
                 step="0.01"
                 min="0"
@@ -156,7 +158,7 @@ export default function DepositPage() {
                 required
               />
               <Select
-                label="Currency"
+                label={t("currency")}
                 value={chequeCurrency}
                 onChange={(e) => setChequeCurrency(e.target.value)}
                 options={[
@@ -167,17 +169,17 @@ export default function DepositPage() {
               />
             </div>
             <Input
-              label="Payee Name"
+              label={t("payeeName")}
               value={payee}
               onChange={(e) => setPayee(e.target.value)}
-              placeholder="Name on the cheque"
+              placeholder={t("payeePlaceholder")}
               required
             />
             <p className="text-xs text-slate-500">
-              Cheques typically clear in 3–5 business days. Funds will be credited once cleared.
+              {t("chequeNote")}
             </p>
             <Button type="submit" fullWidth>
-              Submit Cheque
+              {t("submitCheque")}
             </Button>
           </form>
         )}

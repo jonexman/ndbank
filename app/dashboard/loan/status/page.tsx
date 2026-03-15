@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { PageHeader, DataTable, Button } from "@/components/ui";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function LoanStatusPage() {
+  const t = useTranslations("loanStatus");
+  const locale = useLocale();
   const { userId, isLoading } = useAuth();
   const router = useRouter();
   const [loans, setLoans] = useState<
@@ -34,24 +37,24 @@ export default function LoanStatusPage() {
   return (
     <div>
       <PageHeader
-        title="Loan Status"
+        title={t("title")}
         backHref="/dashboard"
-        subtitle="Track your loan applications"
+        subtitle={t("subtitle")}
         actions={
           <Button asChild href="/dashboard/loan/apply">
-            New Application
+            {t("newApplication")}
           </Button>
         }
       />
       <DataTable
         columns={[
-          { key: "loan_id", header: "Loan ID" },
-          { key: "amount", header: "Amount", render: (l) => `$${l.amount.toLocaleString()}` },
-          { key: "duration", header: "Duration" },
-          { key: "loan_type", header: "Type" },
+          { key: "loan_id", header: t("loanId") },
+          { key: "amount", header: t("amount"), render: (l) => `$${l.amount.toLocaleString()}` },
+          { key: "duration", header: t("duration") },
+          { key: "loan_type", header: t("type") },
           {
             key: "status",
-            header: "Status",
+            header: t("status"),
             render: (l) => (
               <span
                 className={
@@ -66,11 +69,11 @@ export default function LoanStatusPage() {
               </span>
             ),
           },
-          { key: "date", header: "Date", render: (l) => new Date(l.date).toLocaleDateString() },
+          { key: "date", header: t("date"), render: (l) => new Date(l.date).toLocaleDateString(locale === "ar" ? "ar" : "en-US") },
         ]}
         data={loans}
         keyExtractor={(l) => String(l.id)}
-        emptyMessage="No loan applications."
+        emptyMessage={t("emptyMessage")}
         striped
       />
     </div>

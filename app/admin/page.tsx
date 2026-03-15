@@ -70,7 +70,7 @@ export default function AdminDashboardPage() {
         <ul className="text-sm text-slate-600 space-y-1 list-disc list-inside">
           <li><strong>Users</strong> — Manage clients, add new users, review KYC submissions</li>
           <li><strong>Tools</strong> — System info and site settings</li>
-          <li><strong>Managements</strong> — Cards, loans, currencies, exchanges</li>
+          <li><strong>Managements</strong> — Cards, loans, exchanges</li>
           <li><strong>Gateway</strong> — Payment methods</li>
           <li><strong>Finance</strong> — Transactions, pending transfers, deposits, cheques</li>
           <li><strong>Configure</strong> — Account types and config hub</li>

@@ -23,7 +23,7 @@ export default function AccountTypesPage() {
 
   return (
     <div>
-      <PageHeader title="Account Types" backHref="/admin/config" subtitle="Configure account types (Savings, Current, Premium)" />
+      <PageHeader title="Account Types" backHref="/admin/settings/config" subtitle="Configure account types (Savings, Current, Premium)" />
       <DataTable
         columns={[
           { key: "id", header: "ID" },

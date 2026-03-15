@@ -2,9 +2,12 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import { DM_Sans, Outfit, JetBrains_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { siteConfig } from "../lib/siteConfig";
 import { ClientLayoutWrapper } from "../components/ClientLayoutWrapper";
 import { AuthProvider } from "../components/providers/AuthProvider";
+import { HtmlLangDir } from "../components/HtmlLangDir";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-heading", display: "swap" });
@@ -18,13 +21,26 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+};
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
   return (
-    <html lang="en" className={`${dmSans.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
+    <html suppressHydrationWarning className={`${dmSans.variable} ${outfit.variable} ${jetbrainsMono.variable}`}>
       <body>
-        <AuthProvider>
-          <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-        </AuthProvider>
+        <NextIntlClientProvider messages={messages}>
+          <HtmlLangDir locale={locale}>
+            <AuthProvider>
+              <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+            </AuthProvider>
+          </HtmlLangDir>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

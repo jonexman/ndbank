@@ -30,13 +30,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetch("/api/auth/session")
       .then(async (r) => {
         const text = await r.text();
+        let data: { user?: { id: string; email?: string } | null; loginDisabled?: boolean } = { user: null };
         try {
-          return text ? JSON.parse(text) : { user: null };
+          data = text ? JSON.parse(text) : { user: null };
         } catch {
-          return { user: null };
+          data = { user: null };
         }
+        if (r.status === 403 && data.loginDisabled) {
+          setUserId(null);
+          setEmail(null);
+          fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+          router.replace("/dashboard/signin?reason=disabled");
+          return;
+        }
+        return data;
       })
       .then((data) => {
+        if (!data) return;
         if (data.user?.id) {
           setUserId(data.user.id);
           setEmail(data.user.email ?? null);

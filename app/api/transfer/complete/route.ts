@@ -5,6 +5,7 @@ import {
   getAccountByUserId,
   getTransferOtpByTxRef,
   updateTransferOtpStatus,
+  setTransferOtpUserCompleted,
   getUserTransferCodes,
 } from "@/lib/supabase/db";
 import { verifyCode } from "@/lib/auth/codes";
@@ -84,12 +85,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "error", message: "Account not found." }, { status: 404 });
   }
 
-  if (Number(senderAccount.balance) < Number(otpRow.amount)) {
+  const totalDebit = Number(otpRow.amount) + Number(otpRow.fee_amount ?? 0);
+  if (Number(senderAccount.balance) < totalDebit) {
     return NextResponse.json(
       { status: "error", message: "Insufficient funds. Balance has changed since initiation." },
       { status: 400 }
     );
   }
+
+  await setTransferOtpUserCompleted(supabase, otpRow.id);
 
   // Transfer remains pending until admin approves; do not execute process_transfer here
   return NextResponse.json(

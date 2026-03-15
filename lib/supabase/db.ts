@@ -13,6 +13,7 @@ export type DbUser = {
   can_transfer: boolean;
   verified: boolean;
   roles: string[] | null;
+  login_disabled?: boolean;
   created_at: string;
 };
 
@@ -59,6 +60,8 @@ export type DbTransferOtp = {
   currency: string;
   tx_region: string;
   status: string;
+  fee_amount?: number;
+  user_completed_at?: string | null;
   created_at: string;
   expires_at: string;
 };
@@ -263,6 +266,8 @@ export async function createTransferOtp(
     currency: string;
     tx_region: string;
     expires_at: string;
+    fee_amount?: number;
+    user_completed_at?: string | null;
   }
 ): Promise<{ data: DbTransferOtp | null; error: Error | null }> {
   const { data: row, error } = await supabase
@@ -300,6 +305,17 @@ export async function updateTransferOtpStatus(
   status: "approved" | "expired" | "rejected"
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase.from("transfer_otps").update({ status }).eq("id", id);
+  return { error: error ? new Error(error.message) : null };
+}
+
+export async function setTransferOtpUserCompleted(
+  supabase: SupabaseClient,
+  id: string
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("transfer_otps")
+    .update({ user_completed_at: new Date().toISOString() })
+    .eq("id", id);
   return { error: error ? new Error(error.message) : null };
 }
 
@@ -376,6 +392,23 @@ export async function getPendingTransferOtpsByUserId(
     .select("*")
     .eq("user_id", userId)
     .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []) as DbTransferOtp[];
+}
+
+/** Transfers that are pending and still awaiting the user's transfer codes (not yet sent to admin). */
+export async function getAwaitingCodesTransfersByUserId(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<DbTransferOtp[]> {
+  const { data, error } = await supabase
+    .from("transfer_otps")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .is("user_completed_at", null)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
   if (error) return [];

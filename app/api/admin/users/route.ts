@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";
 
 export async function GET() {
-  const { authorized, supabase } = await requireAdmin();
+  const { authorized, supabase, isSuperAdmin } = await requireAdmin();
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,19 +25,23 @@ export async function GET() {
     }
   }
 
-  const formatted = (users ?? []).map((u) => ({
-    id: u.id,
-    usercode: u.usercode,
-    email: u.email,
-    firstname: (u.full_name || "").split(" ")[0] ?? "",
-    lastname: (u.full_name || "").split(" ").slice(1).join(" ") ?? "",
-    bankNumber: u.bank_number,
-    balance: accountMap.get(u.id)?.balance ?? 0,
-    currency: accountMap.get(u.id)?.currency ?? "USD",
-    canTransfer: u.can_transfer,
-    verified: u.verified,
-    roles: u.roles ?? ["member"],
-  }));
+  const formatted = (users ?? []).map((u) => {
+    const roles = (u.roles ?? ["member"]) as string[];
+    const sanitizedRoles = isSuperAdmin ? roles : roles.filter((r) => r !== "super-admin");
+    return {
+      id: u.id,
+      usercode: u.usercode,
+      email: u.email,
+      firstname: (u.full_name || "").split(" ")[0] ?? "",
+      lastname: (u.full_name || "").split(" ").slice(1).join(" ") ?? "",
+      bankNumber: u.bank_number,
+      balance: accountMap.get(u.id)?.balance ?? 0,
+      currency: accountMap.get(u.id)?.currency ?? "USD",
+      canTransfer: u.can_transfer,
+      verified: u.verified,
+      roles: sanitizedRoles,
+    };
+  });
 
   return NextResponse.json({ users: formatted });
 }

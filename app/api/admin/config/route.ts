@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireSuperAdmin } from "@/lib/admin/auth";
 
 const ACCOUNT_TYPES = [
   { id: 1, name: "Savings", code: "SAV", min_balance: 100, description: "Standard savings account" },
@@ -19,9 +19,9 @@ const SITE_OPTIONS = [
 ];
 
 export async function GET() {
-  const { authorized } = await requireAdmin();
+  const { authorized } = await requireSuperAdmin();
   if (!authorized) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Super-admin only" }, { status: 403 });
   }
 
   return NextResponse.json({

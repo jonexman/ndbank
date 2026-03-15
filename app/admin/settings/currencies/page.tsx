@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { mockCurrencies } from "@/lib/mockData";
 import { PageHeader, DataTable } from "@/components/ui";
 
@@ -9,7 +9,7 @@ export default function AdminCurrenciesPage() {
 
   return (
     <div>
-      <PageHeader title="Currencies" subtitle="Supported currencies and rates" />
+      <PageHeader title="Currencies" backHref="/admin/settings" subtitle="Supported currencies and rates" />
       <DataTable
         columns={[
           { key: "code", header: "Code" },

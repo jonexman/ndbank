@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Card, Input, Button, PageHeader, Select, Spinner } from "@/components/ui";
 import { COUNTRIES as COUNTRY_LIST } from "@/lib/admin/options";
 
@@ -57,6 +58,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export default function SignupPage() {
+  const t = useTranslations("dashboard");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -168,13 +170,13 @@ export default function SignupPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 lg:py-20">
-      <PageHeader title="Create Account" subtitle="Sign up for your UBA Senegal e-banking account" />
+      <PageHeader title={t("createAccount")} subtitle={t("createAccountSubtitle")} />
       <Card variant="elevated" className="mt-8 relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-4">
               <Spinner size="lg" />
-              <span className="text-sm font-medium text-slate-600">Creating account...</span>
+              <span className="text-sm font-medium text-slate-600">{t("creatingAccount")}</span>
             </div>
           </div>
         )}

@@ -79,11 +79,13 @@ const adminNav: NavItem[] = [
     ],
   },
   {
-    label: "Tools",
-    icon: "tools",
+    label: "Finance",
+    icon: "finance",
     children: [
-      { href: "/admin/info", label: "Info" },
-      { href: "/admin/settings", label: "Settings" },
+      { href: "/admin/finance/transfers", label: "Transactions" },
+      { href: "/admin/finance/pending-transfers", label: "Pending Transfers" },
+      { href: "/admin/finance/deposits", label: "Deposits" },
+      { href: "/admin/finance/cheques", label: "Cheques" },
     ],
   },
   {
@@ -92,7 +94,6 @@ const adminNav: NavItem[] = [
     children: [
       { href: "/admin/management/cards", label: "Cards" },
       { href: "/admin/management/loans", label: "Loans" },
-      { href: "/admin/management/currencies", label: "Currencies" },
       { href: "/admin/management/exchanges", label: "Exchanges" },
     ],
   },
@@ -105,21 +106,11 @@ const adminNav: NavItem[] = [
     ],
   },
   {
-    label: "Finance",
-    icon: "finance",
+    label: "Tools",
+    icon: "tools",
     children: [
-      { href: "/admin/finance/transfers", label: "Transactions" },
-      { href: "/admin/finance/pending-transfers", label: "Pending Transfers" },
-      { href: "/admin/finance/deposits", label: "Deposits" },
-      { href: "/admin/finance/cheques", label: "Cheques" },
-    ],
-  },
-  {
-    label: "Configure",
-    icon: "configure",
-    children: [
-      { href: "/admin/config", label: "Config Hub" },
-      { href: "/admin/config/account-types", label: "Account Types" },
+      { href: "/admin/info", label: "Info" },
+      { href: "/admin/settings", label: "Settings" },
     ],
   },
 ];
@@ -140,16 +131,28 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [adminUser, setAdminUser] = useState<{ email: string | null; fullName: string | null } | null>(null);
+  const [adminUser, setAdminUser] = useState<{ email: string | null; fullName: string | null; isSuperAdmin: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/me")
       .then((r) => r.json())
       .then((d) => {
-        if (!d.error) setAdminUser({ email: d.email ?? null, fullName: d.fullName ?? null });
+        if (!d.error) setAdminUser({ email: d.email ?? null, fullName: d.fullName ?? null, isSuperAdmin: !!d.isSuperAdmin });
       })
       .catch(() => {});
   }, []);
+
+  const visibleNav = adminUser?.isSuperAdmin
+    ? adminNav
+    : adminNav.filter((item) => {
+        if ("href" in item) return true;
+        if ("children" in item) {
+          const superAdminOnlySections = ["Tools"];
+          if (superAdminOnlySections.includes(item.label)) return false;
+          return true;
+        }
+        return true;
+      });
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
@@ -214,7 +217,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <p className="px-4 py-2 text-xs text-white/50">Use the menu below to navigate</p>
           <nav className="flex-1 p-4 overflow-y-auto" aria-label="Admin navigation">
             <div className="space-y-1">
-              {adminNav.map((item, idx) =>
+              {visibleNav.map((item, idx) =>
                 "href" in item && item.href ? (
                   <div key={item.href} className={idx > 0 ? "pt-4 mt-4 border-t border-white/10" : ""}>
                     <Link

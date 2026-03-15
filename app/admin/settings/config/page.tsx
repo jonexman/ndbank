@@ -4,13 +4,13 @@ import Link from "next/link";
 import { Card, PageHeader } from "@/components/ui";
 
 const links = [
-  { href: "/admin/config/account-types", label: "Account Types", desc: "Configure account types (Savings, Current, etc.)" },
+  { href: "/admin/settings/config/account-types", label: "Account Types", desc: "Configure account types (Savings, Current, etc.)" },
 ];
 
 export default function ConfigHubPage() {
   return (
     <div>
-      <PageHeader title="Config" backHref="/admin" subtitle="System configuration" />
+      <PageHeader title="Config" backHref="/admin/settings" subtitle="System configuration" />
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {links.map((l) => (
           <Link key={l.href} href={l.href}>

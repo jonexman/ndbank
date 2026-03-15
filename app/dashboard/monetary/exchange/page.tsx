@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, Input, Select, Button, PageHeader } from "@/components/ui";
 
 export default function ExchangePage() {
+  const t = useTranslations("exchange");
   const [currencies, setCurrencies] = useState<{ code: string; name: string; rate: number }[]>([]);
   const [fromCurrency, setFromCurrency] = useState("USD");
   const [toCurrency, setToCurrency] = useState("GBP");
@@ -38,13 +40,13 @@ export default function ExchangePage() {
 
   return (
     <div>
-      <PageHeader title="Currency Exchange" backHref="/dashboard" subtitle="Convert between currencies" />
+      <PageHeader title={t("title")} backHref="/dashboard" subtitle={t("subtitle")} />
       <Card variant="elevated" className="max-w-lg">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex gap-4">
             <div className="flex-1">
               <Input
-                label="Amount"
+                label={t("amount")}
                 type="number"
                 step="0.01"
                 value={fromAmount}
@@ -55,7 +57,7 @@ export default function ExchangePage() {
             </div>
             <div className="w-28">
               <Select
-                label="From"
+                label={t("from")}
                 value={fromCurrency}
                 onChange={(e) => setFromCurrency(e.target.value)}
                 options={currencies.map((c) => ({ value: c.code, label: c.code }))}
@@ -63,17 +65,17 @@ export default function ExchangePage() {
             </div>
           </div>
           <Select
-            label="To"
+            label={t("to")}
             value={toCurrency}
             onChange={(e) => setToCurrency(e.target.value)}
             options={toOptions.map((c) => ({ value: c.code, label: `${c.code} - ${c.name}` }))}
           />
           <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "Processing..." : "Get Quote"}
+            {loading ? t("processing") : t("getQuote")}
           </Button>
           {result && (
             <div className="form-alert-success">
-              You will receive: <strong>{result.expected.toFixed(2)} {toCurrency}</strong>
+              {t("youWillReceive")} <strong>{result.expected.toFixed(2)} {toCurrency}</strong>
             </div>
           )}
         </form>

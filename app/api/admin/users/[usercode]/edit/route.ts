@@ -8,7 +8,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ usercode: string }> }
 ) {
-  const { authorized, supabase } = await requireAdmin();
+  const { authorized, supabase, isSuperAdmin } = await requireAdmin();
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -23,6 +23,9 @@ export async function GET(
   const accounts = await getAccountsByUserId(supabase, user.id);
   const usdAccount = accounts.find((a) => a.currency === "USD");
 
+  const roles = (user.roles ?? ["member"]) as string[];
+  const sanitizedRoles = authorized && isSuperAdmin ? roles : roles.filter((r: string) => r !== "super-admin");
+
   return NextResponse.json({
     user: {
       id: user.id,
@@ -33,7 +36,8 @@ export async function GET(
       bankNumber: user.bank_number,
       balance: usdAccount ? Number(usdAccount.balance) : 0,
       currency: usdAccount?.currency ?? "USD",
-      roles: user.roles ?? ["member"],
+      roles: sanitizedRoles,
+      loginDisabled: !!user.login_disabled,
       register_time: user.created_at ?? "",
       last_seen: "",
     },
@@ -55,7 +59,7 @@ export async function GET(
 }
 
 export async function POST(req: NextRequest, context: { params: Promise<{ usercode: string }> }) {
-  const { authorized, supabase, isSuperAdmin } = await requireAdmin();
+  const { authorized, supabase, isSuperAdmin, user: adminUser } = await requireAdmin();
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -71,6 +75,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ userco
   if (body.roles !== undefined && !isSuperAdmin) {
     return NextResponse.json({ error: "Only super-admin can change access control" }, { status: 403 });
   }
+  if (body.loginDisabled === true && adminUser && user.id === adminUser.id) {
+    return NextResponse.json({ error: "You cannot disable your own login" }, { status: 403 });
+  }
 
   const userUpdates: Record<string, unknown> = {};
   if (body.email !== undefined) userUpdates.email = body.email;
@@ -83,6 +90,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ userco
   }
   if (body.canTransfer !== undefined) userUpdates.can_transfer = body.canTransfer;
   if (body.verified !== undefined) userUpdates.verified = body.verified;
+  if (body.loginDisabled !== undefined) userUpdates.login_disabled = !!body.loginDisabled;
   if (body.roles !== undefined && Array.isArray(body.roles)) userUpdates.roles = body.roles;
   userUpdates.updated_at = new Date().toISOString();
 

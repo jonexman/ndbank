@@ -31,10 +31,18 @@ function maskAccount(account: string | null | undefined) {
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[] | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [search, setSearch] = useState("");
   const [filterVerified, setFilterVerified] = useState<"all" | "verified" | "unverified">("all");
   const [filterRole, setFilterRole] = useState<"all" | "member" | "administrator" | "super-admin">("all");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then((d) => setIsSuperAdmin(!!d.isSuperAdmin))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setUsers(null);
@@ -123,7 +131,7 @@ export default function AdminUsersPage() {
           <option value="all">All roles</option>
           <option value="member">Member</option>
           <option value="administrator">Administrator</option>
-          <option value="super-admin">Super Admin</option>
+          {isSuperAdmin && <option value="super-admin">Super Admin</option>}
         </select>
       </div>
 

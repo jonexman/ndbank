@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
     recipient_account: t.recipient_account ?? null,
   }));
 
-  const pendingTransfers = pendingOtps.map((p) => ({
+  const pendingSubmitted = pendingOtps.filter((p) => (p as { user_completed_at?: string | null }).user_completed_at != null);
+  const pendingTransfers = pendingSubmitted.map((p) => ({
     tx_ref: p.tx_ref,
     principal: Number(p.amount),
     tx_type: "debit" as const,

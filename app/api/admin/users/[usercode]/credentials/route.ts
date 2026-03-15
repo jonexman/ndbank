@@ -57,16 +57,18 @@ export async function GET(
   }));
 
   const adminSupabase = createAdminClient();
-  let pendingTransfers: Array<{ tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string }> = [];
+  type PendingRow = { tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string; user_completed_at: string | null };
+  let pendingTransfers: Array<{ tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string; awaiting_user: boolean }> = [];
   if (adminSupabase) {
     const { data: pt } = await adminSupabase
       .from("transfer_otps")
-      .select("tx_ref, otp_code, recipient_account, amount, currency, tx_region, expires_at")
+      .select("tx_ref, otp_code, recipient_account, amount, currency, tx_region, expires_at, user_completed_at")
       .eq("user_id", user.id)
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
-    const rows = (pt ?? []) as Array<{ tx_ref: string; otp_code: string; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string }>;
+      .order("created_at", { ascending: false })
+      .limit(2);
+    const rows = (pt ?? []) as PendingRow[];
     pendingTransfers = rows.map((r) => ({
       tx_ref: r.tx_ref,
       otp_code: r.otp_code,
@@ -75,6 +77,7 @@ export async function GET(
       currency: r.currency,
       tx_region: r.tx_region,
       expires_at: r.expires_at,
+      awaiting_user: r.user_completed_at == null,
     }));
   }
 

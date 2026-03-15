@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type IndexItem = {
   symbol: string;
@@ -13,6 +14,7 @@ type IndexItem = {
 };
 
 export function MarketIndices() {
+  const t = useTranslations("clientDashboard");
   const [indices, setIndices] = useState<IndexItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export function MarketIndices() {
   if (loading) {
     return (
       <section>
-        <h2 className="text-lg font-semibold text-navy font-heading mb-4">Market Indices</h2>
+        <h2 className="text-lg font-semibold text-navy font-heading mb-4">{t("marketIndices")}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="h-24 rounded-xl bg-slate-100 animate-pulse" />
@@ -41,7 +43,7 @@ export function MarketIndices() {
 
   return (
     <section className="mb-10">
-      <h2 className="text-lg font-semibold text-navy font-heading mb-4">Market Indices</h2>
+      <h2 className="text-lg font-semibold text-navy font-heading mb-4">{t("marketIndices")}</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {indices.map((idx) => (
           <div

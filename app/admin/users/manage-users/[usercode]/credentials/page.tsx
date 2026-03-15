@@ -24,7 +24,7 @@ interface CredentialData {
   };
   currencies: Array<{ code: string; name: string; symbol: string }>;
   balances: Array<{ code: string; name: string; symbol: string; balance: number }>;
-  pendingTransfers?: Array<{ tx_ref: string; otp_code: string | null; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string }>;
+  pendingTransfers?: Array<{ tx_ref: string; otp_code: string | null; recipient_account: string; amount: number; currency: string; tx_region: string; expires_at: string; awaiting_user?: boolean }>;
 }
 
 export default function CredentialsPage() {
@@ -42,6 +42,8 @@ export default function CredentialsPage() {
   const [tcNewValue, setTcNewValue] = useState("");
   const [tcEditId, setTcEditId] = useState<string | null>(null);
   const [tcEditValue, setTcEditValue] = useState("");
+  const [tcShowNewValue, setTcShowNewValue] = useState(false);
+  const [tcShowEditValue, setTcShowEditValue] = useState(false);
 
   const [kycRejectReason, setKycRejectReason] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -341,12 +343,23 @@ export default function CredentialsPage() {
       {data.pendingTransfers && data.pendingTransfers.length > 0 && (
         <Card className="p-6 border-primary/20 bg-primary/5">
           <h3 className="text-base font-semibold text-navy mb-3">Pending transfers</h3>
-          <p className="text-sm text-slate-600 mb-4">Client must enter their transfer codes to complete. If they don&apos;t have the codes, share them from the Transfer Codes section below.</p>
+          <p className="text-sm text-slate-600 mb-4">
+            <strong>Awaiting user:</strong> client has not yet entered their transfer codes. <strong>Pending approval:</strong> client has completed codes; you can approve in Finance → Pending transfers.
+          </p>
           <div className="space-y-3">
             {data.pendingTransfers.map((pt) => (
               <div key={pt.tx_ref} className="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-white border border-slate-200">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-500">Ref: <span className="font-mono">{pt.tx_ref}</span></p>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="font-mono text-sm font-medium text-navy">{pt.tx_ref}</span>
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded-lg text-xs font-semibold ${
+                        pt.awaiting_user ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {pt.awaiting_user ? "Awaiting user verification" : "Pending admin approval"}
+                    </span>
+                  </div>
                   <p className="text-sm text-slate-500">{pt.amount} {pt.currency} → {pt.recipient_account}</p>
                   <p className="text-xs text-slate-400">Expires {new Date(pt.expires_at).toLocaleString()}</p>
                 </div>
@@ -453,13 +466,36 @@ export default function CredentialsPage() {
                 onChange={(e) => setTcNewType(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
                 placeholder="OTP"
               />
-              <Input
-                label="Code value"
-                type="password"
-                value={tcNewValue}
-                onChange={(e) => setTcNewValue(e.target.value)}
-                placeholder="User's code"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">Code value</label>
+                <div className="relative flex">
+                  <input
+                    type={tcShowNewValue ? "text" : "password"}
+                    value={tcNewValue}
+                    onChange={(e) => setTcNewValue(e.target.value)}
+                    placeholder="User's code"
+                    className="w-full pr-11 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTcShowNewValue((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-navy hover:bg-slate-100 transition-colors"
+                    aria-label={tcShowNewValue ? "Hide code" : "Show code"}
+                    tabIndex={-1}
+                  >
+                    {tcShowNewValue ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button type="submit">Add</Button>
                 <Button type="button" variant="secondary" onClick={() => { setTcAction(null); setTcNewType(""); setTcNewValue(""); }}>Cancel</Button>
@@ -486,14 +522,40 @@ export default function CredentialsPage() {
                   <span className="font-mono font-semibold text-navy w-16">{c.code_type}</span>
                   {tcEditId === c.id ? (
                     <form onSubmit={(e) => handleTcUpdate(e, c.id)} className="flex-1 flex items-center gap-2">
-                      <Input type="password" value={tcEditValue} onChange={(e) => setTcEditValue(e.target.value)} placeholder="New value" />
+                      <div className="relative flex flex-1 min-w-0">
+                        <input
+                          type={tcShowEditValue ? "text" : "password"}
+                          value={tcEditValue}
+                          onChange={(e) => setTcEditValue(e.target.value)}
+                          placeholder="New value"
+                          className="w-full pr-11 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setTcShowEditValue((v) => !v)}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded text-slate-400 hover:text-navy hover:bg-slate-100 transition-colors"
+                          aria-label={tcShowEditValue ? "Hide code" : "Show code"}
+                          tabIndex={-1}
+                        >
+                          {tcShowEditValue ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                       <Button type="submit" size="sm">Save</Button>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => { setTcEditId(null); setTcEditValue(""); }}>Cancel</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => { setTcEditId(null); setTcEditValue(""); setTcShowEditValue(false); }}>Cancel</Button>
                     </form>
                   ) : (
                     <>
                       <span className="text-slate-400 flex-1">••••</span>
-                      <Button variant="ghost" size="sm" onClick={() => { setTcEditId(c.id); setTcEditValue(""); }}>Change</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setTcEditId(c.id); setTcEditValue(""); setTcShowEditValue(false); }}>Change</Button>
                       <button type="button" onClick={() => handleTcDelete(c.id)} className="text-red-600 hover:underline text-sm">Delete</button>
                     </>
                   )}

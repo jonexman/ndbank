@@ -5,12 +5,21 @@
 @layer base {
   html {
     @apply scroll-smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  html[dir="rtl"] {
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   }
   body {
     @apply bg-slate-50 text-slate-900 antialiased font-sans;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-slate-900;
+  }
+  img, svg, video {
+    max-width: 100%;
+    height: auto;
   }
 }
 

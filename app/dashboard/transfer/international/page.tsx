@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, Input, Select, Button, PageHeader } from "@/components/ui";
 import Link from "next/link";
 
 type Step = "form" | "confirm" | "codes" | "processing" | "success";
 
 export default function InternationalTransferPage() {
+  const t = useTranslations("transfer");
+  const searchParams = useSearchParams();
   const [bankAccount, setBankAccount] = useState("");
   const [bankName, setBankName] = useState("");
   const [swiftCode, setSwiftCode] = useState("");
@@ -19,6 +23,40 @@ export default function InternationalTransferPage() {
   const [txRef, setTxRef] = useState("");
   const [codeTypes, setCodeTypes] = useState<Array<{ type: string; order: number }>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [chargePct, setChargePct] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [totalDebit, setTotalDebit] = useState<number>(0);
+  const [resumedForCodes, setResumedForCodes] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/transfer/charge-rates")
+      .then((r) => r.json())
+      .then((d) => setChargePct(Number(d.international_transfer_charge_pct) || 0))
+      .catch(() => {});
+  }, []);
+
+  const resumeTxRef = searchParams.get("tx_ref");
+  useEffect(() => {
+    if (!resumeTxRef) return;
+    fetch("/api/transfer/awaiting-codes")
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d?.awaiting) ? d.awaiting : [];
+        const match = list.find((a: { tx_ref: string; tx_region: string }) => a.tx_ref === resumeTxRef && a.tx_region === "international");
+        if (match) {
+          setTxRef(match.tx_ref);
+          setCodeTypes(match.code_types ?? []);
+          setAmount(String(match.amount));
+          setCurrency(match.currency ?? "USD");
+          setBankAccount(match.recipient_account ?? "");
+          setFeeAmount(Number(match.fee_amount) || 0);
+          setTotalDebit(Number(match.amount) + Number(match.fee_amount) || 0);
+          setStep("codes");
+          setResumedForCodes(true);
+        }
+      })
+      .catch(() => {});
+  }, [resumeTxRef]);
 
   const resetForm = () => {
     setBankAccount("");
@@ -30,6 +68,7 @@ export default function InternationalTransferPage() {
     setTxRef("");
     setCodeTypes([]);
     setStep("form");
+    setResumedForCodes(false);
   };
 
   const handleConfirm = (e: React.FormEvent) => {
@@ -59,6 +98,8 @@ export default function InternationalTransferPage() {
       if (json.status === "success") {
         setTxRef(json.tx_ref);
         setPin("");
+        setFeeAmount(Number(json.fee_amount) || 0);
+        setTotalDebit(Number(json.total_debit) || parseFloat(amount));
         if (json.requires_codes && json.code_types?.length > 0) {
           setCodeTypes(json.code_types);
           setCodes({});
@@ -68,12 +109,12 @@ export default function InternationalTransferPage() {
         }
       } else {
         setStep("form");
-        setStatus({ type: "error", msg: json.message || "Transfer initiation failed" });
+        setStatus({ type: "error", msg: json.message || t("initiationFailed") });
       }
     } catch {
       setSubmitting(false);
       setStep("form");
-      setStatus({ type: "error", msg: "Request failed" });
+      setStatus({ type: "error", msg: t("requestFailed") });
     }
   };
 
@@ -94,12 +135,12 @@ export default function InternationalTransferPage() {
         setStep("success");
       } else {
         setStep("codes");
-        setStatus({ type: "error", msg: json.message || "Transfer failed" });
+        setStatus({ type: "error", msg: json.message || t("transferFailed") });
       }
     } catch {
       setSubmitting(false);
       setStep("codes");
-      setStatus({ type: "error", msg: "Request failed" });
+      setStatus({ type: "error", msg: t("requestFailed") });
     }
   };
 
@@ -107,7 +148,7 @@ export default function InternationalTransferPage() {
   if (step === "processing") {
     return (
       <div>
-        <PageHeader title="International Transfer" backHref="/dashboard" subtitle="Processing your transfer" />
+        <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("processingSubtitle")} />
         <Card variant="elevated" className="max-w-lg overflow-hidden">
           <div className="flex flex-col items-center justify-center py-16">
             <div className="relative w-20 h-20 mb-6">
@@ -122,8 +163,8 @@ export default function InternationalTransferPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-lg font-semibold text-navy">Processing transfer</p>
-            <p className="text-sm text-slate-500 mt-1">Please wait while we process your international transfer</p>
+            <p className="text-lg font-semibold text-navy">{t("processingTitle")}</p>
+            <p className="text-sm text-slate-500 mt-1">{t("processingPleaseWaitInternational")}</p>
           </div>
         </Card>
       </div>
@@ -136,7 +177,7 @@ export default function InternationalTransferPage() {
     const currencySymbol = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
     return (
       <div>
-        <PageHeader title="International Transfer" backHref="/dashboard" subtitle="Transfer completed" />
+        <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("transferCompleted")} />
         <Card variant="elevated" className="max-w-lg overflow-hidden">
           <div className="text-center py-6 bg-emerald-50 border-b border-emerald-100">
             <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
@@ -144,43 +185,55 @@ export default function InternationalTransferPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-lg font-semibold text-emerald-800">Transfer submitted successfully</p>
-            <p className="text-sm text-emerald-700 mt-1">Reference: <span className="font-mono font-medium">{txRef}</span></p>
+            <p className="text-lg font-semibold text-emerald-800">{t("transferSubmitted")}</p>
+            <p className="text-sm text-emerald-700 mt-1">{t("reference")}: <span className="font-mono font-medium">{txRef}</span></p>
           </div>
           <div className="p-6 space-y-4">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Amount</span>
+              <span className="text-slate-500">{t("amount")}</span>
               <span className="font-semibold text-navy">{currencySymbol}{amountNum.toFixed(2)} {currency}</span>
             </div>
+            {feeAmount > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Fee</span>
+                  <span className="text-slate-700">{currencySymbol}{feeAmount.toFixed(2)} {currency}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium">
+                  <span className="text-slate-700">{t("totalDebit")}</span>
+                  <span className="text-navy">{currencySymbol}{totalDebit.toFixed(2)} {currency}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Beneficiary account</span>
+              <span className="text-slate-500">{t("beneficiaryAccount")}</span>
               <span className="font-mono text-right max-w-[180px] truncate">{bankAccount}</span>
             </div>
             {bankName && (
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Bank</span>
+                <span className="text-slate-500">{t("bank")}</span>
                 <span className="text-right max-w-[180px] truncate">{bankName}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Status</span>
-              <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800">Processing</span>
+              <span className="text-slate-500">{t("status")}</span>
+              <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800">{t("processing")}</span>
             </div>
           </div>
           <div className="px-6 pb-6">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
-              <p className="font-medium text-slate-700 mb-1">What happens next?</p>
-              <p>Your international transfer is being processed. It may take up to <strong>2 working days</strong> to be completed and credited to the beneficiary. You will be notified once the transfer is approved.</p>
+              <p className="font-medium text-slate-700 mb-1">{t("whatHappensNext")}</p>
+              <p>{t("whatHappensNextInternational", { days: "2" })}</p>
             </div>
             <div className="mt-6 flex gap-3">
               <Link
                 href={`/dashboard/receipt/${txRef}`}
                 className="inline-flex items-center justify-center w-full px-5 py-2.5 text-sm font-semibold rounded-full bg-gradient-to-r from-primary-dark to-primary-light text-white hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
-                View transfer slip
+                {t("viewTransferSlip")}
               </Link>
               <Button variant="secondary" onClick={resetForm} fullWidth>
-                New transfer
+                {t("newTransfer")}
               </Button>
             </div>
           </div>
@@ -192,37 +245,51 @@ export default function InternationalTransferPage() {
   // Confirmation step
   if (step === "confirm") {
     const amountNum = parseFloat(amount);
+    const fee = Math.round(amountNum * (chargePct / 100) * 100) / 100;
+    const total = amountNum + fee;
     const currencySymbol = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
     return (
       <div>
-        <PageHeader title="International Transfer" backHref="/dashboard" subtitle="Confirm your transfer" />
+        <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("confirmSubtitle")} />
         <Card variant="elevated" className="max-w-lg">
-          <h3 className="text-base font-semibold text-navy mb-4">Review transfer details</h3>
+          <h3 className="text-base font-semibold text-navy mb-4">{t("reviewDetails")}</h3>
           <div className="space-y-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Beneficiary account</span>
+              <span className="text-slate-500">{t("beneficiaryAccount")}</span>
               <span className="font-mono font-medium text-right max-w-[180px] truncate">{bankAccount}</span>
             </div>
             {bankName && (
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Bank</span>
+                <span className="text-slate-500">{t("bank")}</span>
                 <span className="text-right max-w-[180px] truncate">{bankName}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Amount</span>
+              <span className="text-slate-500">{t("amount")}</span>
               <span className="font-semibold">{currencySymbol}{amountNum.toFixed(2)} {currency}</span>
             </div>
+            {chargePct > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">{t("transferFee", { pct: chargePct })}</span>
+                  <span className="text-slate-700">{currencySymbol}{fee.toFixed(2)} {currency}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium border-t border-slate-200 pt-3">
+                  <span className="text-slate-700">{t("totalDebit")}</span>
+                  <span className="text-navy">{currencySymbol}{total.toFixed(2)} {currency}</span>
+                </div>
+              </>
+            )}
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            International transfers may take up to <strong>2 working days</strong> to be processed and credited.
+            {t("daysConfirmInternational", { days: "2" })}
           </p>
           <div className="mt-6 flex gap-3">
             <Button variant="secondary" onClick={() => setStep("form")} fullWidth>
-              Back
+              {t("back")}
             </Button>
             <Button onClick={handleInitiate} fullWidth>
-              Confirm & transfer
+              {t("confirmAndTransfer")}
             </Button>
           </div>
         </Card>
@@ -234,9 +301,10 @@ export default function InternationalTransferPage() {
   if (step === "codes") {
     return (
       <div>
-        <PageHeader title="International Transfer" backHref="/dashboard" subtitle="Enter your transfer codes" />
+        <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("codesSubtitle")} />
         <Card variant="elevated" className="max-w-lg">
-          <p className="text-sm text-slate-600 mb-4">Enter your transfer codes below. If you don&apos;t have them, contact your administrator.</p>
+          <p className="text-sm text-slate-600 mb-1">{t("codesInstructions")}</p>
+          <p className="text-sm text-slate-500 mb-4">{t("codesValidFor")}</p>
           <form onSubmit={handleComplete} className="space-y-6">
             {status && (
               <div className={status.type === "success" ? "form-alert-success" : "form-alert-error"}>{status.msg}</div>
@@ -246,20 +314,28 @@ export default function InternationalTransferPage() {
               .map(({ type }) => (
                 <Input
                   key={type}
-                  label={`${type} Code`}
+                  label={t("codeLabel", { type })}
                   value={codes[type] ?? ""}
                   onChange={(e) => setCodes((prev) => ({ ...prev, [type]: e.target.value }))}
-                  placeholder={`Enter ${type} code`}
+                  placeholder={t("enterCodePlaceholder", { type })}
                   type="password"
                   required
                 />
               ))}
             <div className="flex gap-3">
-              <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
-                Back
-              </Button>
+              {resumedForCodes ? (
+                <Link href="/dashboard" className="w-full">
+                  <Button type="button" variant="secondary" fullWidth>
+                    {t("backToDashboard")}
+                  </Button>
+                </Link>
+              ) : (
+                <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
+                  {t("back")}
+                </Button>
+              )}
               <Button type="submit" fullWidth disabled={submitting}>
-                Complete transfer
+                {t("completeTransfer")}
               </Button>
             </div>
           </form>
@@ -271,33 +347,33 @@ export default function InternationalTransferPage() {
   // Form step
   return (
     <div>
-      <PageHeader title="International Transfer" backHref="/dashboard" subtitle="Send money overseas" />
+      <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("formSubtitleInternational")} />
       <Card variant="elevated" className="max-w-lg">
         <form onSubmit={handleConfirm} className="space-y-6">
           {status && (
             <div className={status.type === "success" ? "form-alert-success" : "form-alert-error"}>{status.msg}</div>
           )}
           <Input
-            label="Beneficiary Account (IBAN or account number)"
+            label={t("beneficiaryAccountIban")}
             value={bankAccount}
             onChange={(e) => setBankAccount(e.target.value)}
-            placeholder="e.g. GB82WEST12345698765432"
+            placeholder={t("placeholderIban")}
             required
           />
           <Input
-            label="Bank Name"
+            label={t("bankName")}
             value={bankName}
             onChange={(e) => setBankName(e.target.value)}
-            placeholder="e.g. Barclays Bank"
+            placeholder={t("placeholderBank")}
           />
           <Input
-            label="SWIFT/BIC Code"
+            label={t("swiftCode")}
             value={swiftCode}
             onChange={(e) => setSwiftCode(e.target.value)}
-            placeholder="e.g. BARCGB22"
+            placeholder={t("placeholderSwift")}
           />
           <Input
-            label="Amount"
+            label={t("amount")}
             type="number"
             step="0.01"
             min="0"
@@ -307,7 +383,7 @@ export default function InternationalTransferPage() {
             required
           />
           <Select
-            label="Currency"
+            label={t("currency")}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             options={[
@@ -317,20 +393,20 @@ export default function InternationalTransferPage() {
             ]}
           />
           <Input
-            label="PIN"
+            label={t("pin")}
             type="password"
             inputMode="numeric"
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-            placeholder="Enter your PIN"
+            placeholder={t("enterPin")}
             required
           />
           <Button type="submit" fullWidth>
-            Continue
+            {t("continue")}
           </Button>
         </form>
-        <p className="mt-4 text-xs text-slate-500">International transfers may take up to 2 working days to complete.</p>
+        <p className="mt-4 text-xs text-slate-500">{t("daysNoteInternational")}</p>
       </Card>
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Card, Input, Select, Button, PageHeader } from "@/components/ui";
 
 const primaryBtnClass =
@@ -10,6 +12,8 @@ const primaryBtnClass =
 type Step = "form" | "confirm" | "codes" | "processing" | "success";
 
 export default function LocalTransferPage() {
+  const t = useTranslations("transfer");
+  const searchParams = useSearchParams();
   const [bankAccount, setBankAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
@@ -20,6 +24,40 @@ export default function LocalTransferPage() {
   const [txRef, setTxRef] = useState("");
   const [codeTypes, setCodeTypes] = useState<Array<{ type: string; order: number }>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [chargePct, setChargePct] = useState<number>(0);
+  const [feeAmount, setFeeAmount] = useState<number>(0);
+  const [totalDebit, setTotalDebit] = useState<number>(0);
+  const [resumedForCodes, setResumedForCodes] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/transfer/charge-rates")
+      .then((r) => r.json())
+      .then((d) => setChargePct(Number(d.local_transfer_charge_pct) || 0))
+      .catch(() => {});
+  }, []);
+
+  const resumeTxRef = searchParams.get("tx_ref");
+  useEffect(() => {
+    if (!resumeTxRef) return;
+    fetch("/api/transfer/awaiting-codes")
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d?.awaiting) ? d.awaiting : [];
+        const match = list.find((a: { tx_ref: string; tx_region: string }) => a.tx_ref === resumeTxRef && a.tx_region === "local");
+        if (match) {
+          setTxRef(match.tx_ref);
+          setCodeTypes(match.code_types ?? []);
+          setAmount(String(match.amount));
+          setCurrency(match.currency ?? "USD");
+          setBankAccount(match.recipient_account ?? "");
+          setFeeAmount(Number(match.fee_amount) || 0);
+          setTotalDebit(Number(match.amount) + Number(match.fee_amount) || 0);
+          setStep("codes");
+          setResumedForCodes(true);
+        }
+      })
+      .catch(() => {});
+  }, [resumeTxRef]);
 
   const resetForm = () => {
     setBankAccount("");
@@ -29,6 +67,7 @@ export default function LocalTransferPage() {
     setTxRef("");
     setCodeTypes([]);
     setStep("form");
+    setResumedForCodes(false);
   };
 
   const handleConfirm = (e: React.FormEvent) => {
@@ -58,6 +97,8 @@ export default function LocalTransferPage() {
       if (json.status === "success") {
         setTxRef(json.tx_ref);
         setPin("");
+        setFeeAmount(Number(json.fee_amount) || 0);
+        setTotalDebit(Number(json.total_debit) || parseFloat(amount));
         if (json.requires_codes && json.code_types?.length > 0) {
           setCodeTypes(json.code_types);
           setCodes({});
@@ -67,12 +108,12 @@ export default function LocalTransferPage() {
         }
       } else {
         setStep("form");
-        setStatus({ type: "error", msg: json.message || "Transfer initiation failed" });
+        setStatus({ type: "error", msg: json.message || t("initiationFailed") });
       }
     } catch {
       setSubmitting(false);
       setStep("form");
-      setStatus({ type: "error", msg: "Request failed" });
+      setStatus({ type: "error", msg: t("requestFailed") });
     }
   };
 
@@ -93,12 +134,12 @@ export default function LocalTransferPage() {
         setStep("success");
       } else {
         setStep("codes");
-        setStatus({ type: "error", msg: json.message || "Transfer failed" });
+        setStatus({ type: "error", msg: json.message || t("transferFailed") });
       }
     } catch {
       setSubmitting(false);
       setStep("codes");
-      setStatus({ type: "error", msg: "Request failed" });
+      setStatus({ type: "error", msg: t("requestFailed") });
     }
   };
 
@@ -106,7 +147,7 @@ export default function LocalTransferPage() {
   if (step === "processing") {
     return (
       <div>
-        <PageHeader title="Local Transfer" backHref="/dashboard" subtitle="Processing your transfer" />
+        <PageHeader title={t("localTitle")} backHref="/dashboard" subtitle={t("processingSubtitle")} />
         <Card variant="elevated" className="max-w-lg overflow-hidden">
           <div className="flex flex-col items-center justify-center py-16">
             <div className="relative w-20 h-20 mb-6">
@@ -121,8 +162,8 @@ export default function LocalTransferPage() {
                 </svg>
               </div>
             </div>
-            <p className="text-lg font-semibold text-navy">Processing transfer</p>
-            <p className="text-sm text-slate-500 mt-1">Please wait while we process your transaction</p>
+            <p className="text-lg font-semibold text-navy">{t("processingTitle")}</p>
+            <p className="text-sm text-slate-500 mt-1">{t("processingPleaseWait")}</p>
           </div>
         </Card>
       </div>
@@ -135,7 +176,7 @@ export default function LocalTransferPage() {
     const currencySymbol = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
     return (
       <div>
-        <PageHeader title="Local Transfer" backHref="/dashboard" subtitle="Transfer completed" />
+        <PageHeader title={t("localTitle")} backHref="/dashboard" subtitle={t("transferCompleted")} />
         <Card variant="elevated" className="max-w-lg overflow-hidden">
           <div className="text-center py-6 bg-emerald-50 border-b border-emerald-100">
             <div className="w-16 h-16 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center mb-3">
@@ -143,34 +184,46 @@ export default function LocalTransferPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-lg font-semibold text-emerald-800">Transfer submitted successfully</p>
-            <p className="text-sm text-emerald-700 mt-1">Reference: <span className="font-mono font-medium">{txRef}</span></p>
+            <p className="text-lg font-semibold text-emerald-800">{t("transferSubmitted")}</p>
+            <p className="text-sm text-emerald-700 mt-1">{t("reference")}: <span className="font-mono font-medium">{txRef}</span></p>
           </div>
           <div className="p-6 space-y-4">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Amount</span>
+              <span className="text-slate-500">{t("amount")}</span>
               <span className="font-semibold text-navy">{currencySymbol}{amountNum.toFixed(2)} {currency}</span>
             </div>
+            {feeAmount > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Fee</span>
+                  <span className="text-slate-700">{currencySymbol}{feeAmount.toFixed(2)} {currency}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium">
+                  <span className="text-slate-700">{t("totalDebit")}</span>
+                  <span className="text-navy">{currencySymbol}{totalDebit.toFixed(2)} {currency}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Beneficiary account</span>
+              <span className="text-slate-500">{t("beneficiaryAccount")}</span>
               <span className="font-mono">{bankAccount}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Status</span>
-              <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800">Processing</span>
+              <span className="text-slate-500">{t("status")}</span>
+              <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-800">{t("processing")}</span>
             </div>
           </div>
           <div className="px-6 pb-6">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
-              <p className="font-medium text-slate-700 mb-1">What happens next?</p>
-              <p>Your transfer is now being processed. It may take up to <strong>2 working days</strong> to be completed and credited to the beneficiary. You will be notified once the transfer is approved.</p>
+              <p className="font-medium text-slate-700 mb-1">{t("whatHappensNext")}</p>
+              <p>{t("whatHappensNextLocal", { days: "2" })}</p>
             </div>
             <div className="mt-6 flex gap-3">
               <Link href={`/dashboard/receipt/${txRef}`} className={primaryBtnClass}>
-                View transfer slip
+                {t("viewTransferSlip")}
               </Link>
               <Button variant="secondary" onClick={resetForm} fullWidth>
-                New transfer
+                {t("newTransfer")}
               </Button>
             </div>
           </div>
@@ -182,31 +235,45 @@ export default function LocalTransferPage() {
   // Confirmation step
   if (step === "confirm") {
     const amountNum = parseFloat(amount);
+    const fee = Math.round(amountNum * (chargePct / 100) * 100) / 100;
+    const total = amountNum + fee;
     const currencySymbol = currency === "USD" ? "$" : currency === "GBP" ? "£" : currency === "EUR" ? "€" : "";
     return (
       <div>
-        <PageHeader title="Local Transfer" backHref="/dashboard" subtitle="Confirm your transfer" />
+        <PageHeader title={t("localTitle")} backHref="/dashboard" subtitle={t("confirmSubtitle")} />
         <Card variant="elevated" className="max-w-lg">
-          <h3 className="text-base font-semibold text-navy mb-4">Review transfer details</h3>
+          <h3 className="text-base font-semibold text-navy mb-4">{t("reviewDetails")}</h3>
           <div className="space-y-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Beneficiary account</span>
+              <span className="text-slate-500">{t("beneficiaryAccount")}</span>
               <span className="font-mono font-medium">{bankAccount}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">Amount</span>
+              <span className="text-slate-500">{t("amount")}</span>
               <span className="font-semibold">{currencySymbol}{amountNum.toFixed(2)} {currency}</span>
             </div>
+            {chargePct > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">{t("transferFee", { pct: chargePct })}</span>
+                  <span className="text-slate-700">{currencySymbol}{fee.toFixed(2)} {currency}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium border-t border-slate-200 pt-3">
+                  <span className="text-slate-700">{t("totalDebit")}</span>
+                  <span className="text-navy">{currencySymbol}{total.toFixed(2)} {currency}</span>
+                </div>
+              </>
+            )}
           </div>
           <p className="mt-4 text-sm text-slate-500">
-            Transfers may take up to <strong>2 working days</strong> to be processed and credited.
+            {t("daysConfirm", { days: "2" })}
           </p>
           <div className="mt-6 flex gap-3">
             <Button variant="secondary" onClick={() => setStep("form")} fullWidth>
-              Back
+              {t("back")}
             </Button>
             <Button onClick={handleInitiate} fullWidth>
-              Confirm & transfer
+              {t("confirmAndTransfer")}
             </Button>
           </div>
         </Card>
@@ -218,9 +285,10 @@ export default function LocalTransferPage() {
   if (step === "codes") {
     return (
       <div>
-        <PageHeader title="Local Transfer" backHref="/dashboard" subtitle="Enter your transfer codes" />
+        <PageHeader title={t("localTitle")} backHref="/dashboard" subtitle={t("codesSubtitle")} />
         <Card variant="elevated" className="max-w-lg">
-          <p className="text-sm text-slate-600 mb-4">Enter your transfer codes below. If you don&apos;t have them, contact your administrator.</p>
+          <p className="text-sm text-slate-600 mb-1">{t("codesInstructions")}</p>
+          <p className="text-sm text-slate-500 mb-4">{t("codesValidFor")}</p>
           <form onSubmit={handleComplete} className="space-y-6">
             {status && (
               <div className={status.type === "success" ? "form-alert-success" : "form-alert-error"}>{status.msg}</div>
@@ -230,20 +298,28 @@ export default function LocalTransferPage() {
               .map(({ type }) => (
                 <Input
                   key={type}
-                  label={`${type} Code`}
+                  label={t("codeLabel", { type })}
                   value={codes[type] ?? ""}
                   onChange={(e) => setCodes((prev) => ({ ...prev, [type]: e.target.value }))}
-                  placeholder={`Enter ${type} code`}
+                  placeholder={t("enterCodePlaceholder", { type })}
                   type="password"
                   required
                 />
               ))}
             <div className="flex gap-3">
-              <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
-                Back
-              </Button>
+              {resumedForCodes ? (
+                <Link href="/dashboard" className="w-full">
+                  <Button type="button" variant="secondary" fullWidth>
+                    {t("backToDashboard")}
+                  </Button>
+                </Link>
+              ) : (
+                <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
+                  {t("back")}
+                </Button>
+              )}
               <Button type="submit" fullWidth disabled={submitting}>
-                Complete transfer
+                {t("completeTransfer")}
               </Button>
             </div>
           </form>
@@ -255,21 +331,21 @@ export default function LocalTransferPage() {
   // Form step
   return (
     <div>
-      <PageHeader title="Local Transfer" backHref="/dashboard" subtitle="Send money to a local bank account" />
+      <PageHeader title={t("localTitle")} backHref="/dashboard" subtitle={t("formSubtitleLocal")} />
       <Card variant="elevated" className="max-w-lg">
         <form onSubmit={handleConfirm} className="space-y-6">
           {status && (
             <div className={status.type === "success" ? "form-alert-success" : "form-alert-error"}>{status.msg}</div>
           )}
           <Input
-            label="Beneficiary Account Number"
+            label={t("beneficiaryAccountNumber")}
             value={bankAccount}
             onChange={(e) => setBankAccount(e.target.value)}
-            placeholder="e.g. 1234567890"
+            placeholder={t("placeholderAccount")}
             required
           />
           <Input
-            label="Amount"
+            label={t("amount")}
             type="number"
             step="0.01"
             min="0"
@@ -279,7 +355,7 @@ export default function LocalTransferPage() {
             required
           />
           <Select
-            label="Currency"
+            label={t("currency")}
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             options={[
@@ -289,20 +365,20 @@ export default function LocalTransferPage() {
             ]}
           />
           <Input
-            label="PIN"
+            label={t("pin")}
             type="password"
             inputMode="numeric"
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-            placeholder="Enter your PIN"
+            placeholder={t("enterPin")}
             required
           />
           <Button type="submit" fullWidth>
-            Continue
+            {t("continue")}
           </Button>
         </form>
-        <p className="mt-4 text-xs text-slate-500">Transfers may take up to 2 working days to complete.</p>
+        <p className="mt-4 text-xs text-slate-500">{t("daysNote")}</p>
       </Card>
     </div>
   );
