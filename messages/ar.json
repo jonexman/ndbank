@@ -101,6 +101,7 @@
   "client": {
     "eBanking": "الخدمات المصرفية الإلكترونية",
     "visitMainSite": "زيارة الموقع الرئيسي",
+    "helpAndSupport": "المساعدة والدعم",
     "signedInAs": "تم تسجيل الدخول باسم",
     "closeMenu": "إغلاق القائمة",
     "openMenu": "فتح القائمة",
@@ -171,7 +172,20 @@
     "yesterday": "أمس",
     "goodMorning": "صباح الخير",
     "goodAfternoon": "مساء الخير",
-    "goodEvening": "مساء الخير"
+    "goodEvening": "مساء الخير",
+    "lastUpdated": "آخر تحديث",
+    "refresh": "تحديث",
+    "filterTransactions": "تصفية",
+    "all": "الكل",
+    "credits": "ائتمانات",
+    "debits": "مدينات",
+    "exportCsv": "تصدير CSV",
+    "completeBy": "أكمل قبل {date}",
+    "dismissForToday": "إخفاء لليوم",
+    "helpAndSupport": "المساعدة والدعم",
+    "profileCompleteness": "اكتمال الملف",
+    "completeProfile": "أكمل ملفك للاستفادة القصوى من حسابك.",
+    "missingFields": "ناقص"
   },
   "transfer": {
     "localTitle": "تحويل محلي",
@@ -268,7 +282,10 @@
     "balance": "الرصيد",
     "verification": "التحقق",
     "verified": "موثق",
-    "pending": "قيد الانتظار"
+    "pending": "قيد الانتظار",
+    "profileCompleteness": "اكتمال الملف",
+    "completeProfile": "أكمل ملفك للاستفادة القصوى من حسابك.",
+    "missingFields": "ناقص"
   },
   "accountSecurity": {
     "title": "الأمان",

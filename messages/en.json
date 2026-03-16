@@ -101,6 +101,7 @@
   "client": {
     "eBanking": "E-Banking",
     "visitMainSite": "Visit main site",
+    "helpAndSupport": "Help & support",
     "signedInAs": "Signed in as",
     "closeMenu": "Close menu",
     "openMenu": "Open menu",
@@ -171,7 +172,20 @@
     "yesterday": "Yesterday",
     "goodMorning": "Good morning",
     "goodAfternoon": "Good afternoon",
-    "goodEvening": "Good evening"
+    "goodEvening": "Good evening",
+    "lastUpdated": "Last updated",
+    "refresh": "Refresh",
+    "filterTransactions": "Filter",
+    "all": "All",
+    "credits": "Credits",
+    "debits": "Debits",
+    "exportCsv": "Export CSV",
+    "completeBy": "Complete by {date}",
+    "dismissForToday": "Dismiss for today",
+    "helpAndSupport": "Help & support",
+    "profileCompleteness": "Profile completeness",
+    "completeProfile": "Complete your profile to get the most out of your account.",
+    "missingFields": "Missing"
   },
   "transfer": {
     "localTitle": "Local Transfer",
@@ -268,7 +282,10 @@
     "balance": "Balance",
     "verification": "Verification",
     "verified": "Verified",
-    "pending": "Pending"
+    "pending": "Pending",
+    "profileCompleteness": "Profile completeness",
+    "completeProfile": "Complete your profile to get the most out of your account.",
+    "missingFields": "Missing"
   },
   "accountSecurity": {
     "title": "Security",

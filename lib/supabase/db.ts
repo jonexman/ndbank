@@ -495,3 +495,41 @@ export async function updateAccountBalance(
     .eq("id", accountId);
   return { error: error ? new Error(error.message) : null };
 }
+
+/** Count failed login attempts for identifier in the last N minutes (for rate limiting). */
+export async function getRecentFailedLoginAttemptCount(
+  supabase: SupabaseClient,
+  identifier: string,
+  withinMinutes: number
+): Promise<number> {
+  const since = new Date(Date.now() - withinMinutes * 60 * 1000).toISOString();
+  const { count, error } = await supabase
+    .from("user_activity_log")
+    .select("id", { count: "exact", head: true })
+    .eq("event_type", "login_failed")
+    .eq("attempted_identifier", identifier)
+    .gte("created_at", since);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/** Insert a row into user_activity_log (login, logout, or login_failed). Use admin client for login_failed (no user_id). */
+export async function insertUserActivityLog(
+  supabase: SupabaseClient,
+  payload: {
+    user_id?: string | null;
+    event_type: "login" | "logout" | "login_failed";
+    attempted_identifier?: string | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+  }
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("user_activity_log").insert({
+    user_id: payload.user_id ?? null,
+    event_type: payload.event_type,
+    attempted_identifier: payload.attempted_identifier ?? null,
+    ip_address: payload.ip_address ?? null,
+    user_agent: payload.user_agent ?? null,
+  });
+  return { error: error ? new Error(error.message) : null };
+}

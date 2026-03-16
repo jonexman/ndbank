@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { Breadcrumbs } from "@/components/dashboard/Breadcrumbs";
 import { siteConfig } from "@/lib/siteConfig";
 
 const noSidebarPaths = ["/dashboard/signin", "/dashboard/signup"];
@@ -379,6 +380,16 @@ export default function DashboardLayout({
             </Link>
           )}
           <Link
+            href="/contact"
+            onClick={closeSidebar}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-navy/80 hover:text-navy hover:bg-slate-100 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {t("helpAndSupport")}
+          </Link>
+          <Link
             href="/"
             onClick={closeSidebar}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm text-navy/80 hover:text-navy hover:bg-slate-100 transition-colors"
@@ -462,6 +473,7 @@ export default function DashboardLayout({
 
         <main className="flex-1 overflow-auto">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 lg:py-10">
+            <Breadcrumbs />
             {children}
           </div>
         </main>

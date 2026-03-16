@@ -251,6 +251,9 @@ export default function ReceiptPage() {
               Report issue
             </Link>
           </div>
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {copiedRef ? "Reference copied to clipboard" : ""}
+          </div>
           <div className="flex gap-3">
             <button
               type="button"
@@ -263,10 +266,14 @@ export default function ReceiptPage() {
               type="button"
               onClick={handlePrint}
               className="flex-1 py-3 rounded-xl bg-primary text-white font-medium hover:opacity-95 transition-opacity"
+              title="Print or save as PDF using your browser's print dialog"
             >
-              Print / Save
+              Print / Save as PDF
             </button>
           </div>
+          <p className="text-xs text-slate-500 text-center mt-2">
+            Use your browser&apos;s print dialog to save this receipt as a PDF.
+          </p>
         </div>
       </div>
     </div>

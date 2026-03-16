@@ -8,7 +8,6 @@ import {
   Card,
   CardBadge,
   PageHeader,
-  DataTable,
   PageLoader,
   CardSkeleton,
 } from "@/components/ui";
@@ -151,21 +150,6 @@ function useGreeting(firstname: string) {
   return `${greeting}, ${firstname}`;
 }
 
-function useFormatDate() {
-  const t = useTranslations("clientDashboard");
-  return (dateStr: string) => {
-    const d = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (d.toDateString() === today.toDateString()) return t("today");
-    if (d.toDateString() === yesterday.toDateString()) return t("yesterday");
-    const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-    if (d.getFullYear() !== today.getFullYear()) opts.year = "numeric";
-    return d.toLocaleDateString(undefined, opts);
-  };
-}
-
 function formatCurrency(amount: number, currency: string) {
   const symbols: Record<string, string> = {
     USD: "$",
@@ -192,6 +176,9 @@ export default function DashboardPage() {
     try {
       const stored = localStorage.getItem("dashboard_balance_visible");
       if (stored !== null) setBalanceVisible(stored === "true");
+      const today = new Date().toISOString().slice(0, 10);
+      const dismissed = sessionStorage.getItem(`dashboard_awaiting_dismiss_${today}`);
+      setAwaitingDismissed(dismissed === "1");
     } catch {}
   }, []);
   const toggleBalanceVisibility = () => {
@@ -240,7 +227,10 @@ export default function DashboardPage() {
     recipient_account?: string;
     fee_amount?: number;
     code_types: Array<{ type: string; order: number }>;
+    expires_at?: string;
   }>>([]);
+  const [awaitingDismissed, setAwaitingDismissed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -274,6 +264,30 @@ export default function DashboardPage() {
       );
   }, [userId, isLoading, router]);
 
+  const handleRefresh = () => {
+    if (!userId) return;
+    setRefreshing(true);
+    Promise.all([
+      fetchDashboard(),
+      fetch("/api/transfer/awaiting-codes").then((r) => r.json()).catch(() => ({ awaiting: [] })),
+    ])
+      .then(([{ status, data: d }, ac]) => {
+        if (status === 200 && !d?.error && d?.user) {
+          setData(d);
+        }
+        setAwaitingCodes(Array.isArray(ac?.awaiting) ? ac.awaiting : []);
+      })
+      .finally(() => setRefreshing(false));
+  };
+
+  const handleDismissAwaiting = () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      sessionStorage.setItem(`dashboard_awaiting_dismiss_${today}`, "1");
+      setAwaitingDismissed(true);
+    } catch {}
+  };
+
   useEffect(() => {
     if (!userId) return;
     const onFocus = () => {
@@ -290,7 +304,6 @@ export default function DashboardPage() {
 
   const t = useTranslations("clientDashboard");
   const getGreeting = useGreeting(data?.user?.firstname ?? "");
-  const formatDate = useFormatDate();
   const actions = useQuickActions();
 
   if (!userId && !isLoading) {
@@ -342,12 +355,17 @@ export default function DashboardPage() {
     );
   }
 
-  const { user, transactions = [], pendingTransfers = [] } = data;
-  const recentItems = [...transactions, ...pendingTransfers]
-    .sort(
-      (a, b) => new Date(b.tx_date).getTime() - new Date(a.tx_date).getTime(),
-    )
-    .slice(0, 3);
+  const { user, pendingTransfers = [] } = data;
+  const showAwaitingBanner = awaitingCodes.length > 0 && !awaitingDismissed;
+  const earliestExpiry = awaitingCodes.length > 0
+    ? awaitingCodes
+        .map((a) => (a.expires_at ? new Date(a.expires_at).getTime() : Infinity))
+        .reduce((a, b) => Math.min(a, b), Infinity)
+    : null;
+  const completeByLabel =
+    earliestExpiry !== null && Number.isFinite(earliestExpiry)
+      ? t("completeBy", { date: new Date(earliestExpiry).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) })
+      : null;
 
   const handleCopyAccount = async () => {
     const acc = user.account_number ?? user.bank_number;
@@ -362,22 +380,51 @@ export default function DashboardPage() {
     }
   };
 
+  const todayDate = new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "short", day: "numeric" });
+
   return (
     <div>
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="dashboard-status">
+        {data?.error && data.error}
+      </div>
       <PageHeader
         title={getGreeting}
-        subtitle={t("manageAccounts")}
+        subtitle={todayDate}
+        actions={
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-lg text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+            title={t("refresh")}
+            aria-label={t("refresh")}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        }
       />
 
-      {awaitingCodes.length > 0 && (
+      {showAwaitingBanner && (
         <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span className="font-medium">
-              {awaitingCodes.length === 1 ? t("completeYourTransfer") : t("completeYourTransfers", { count: awaitingCodes.length })}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="font-medium">
+                {awaitingCodes.length === 1 ? t("completeYourTransfer") : t("completeYourTransfers", { count: awaitingCodes.length })}
+              </span>
+              {completeByLabel && <span className="text-sm text-blue-700/90">— {completeByLabel}</span>}
+            </div>
+            <button
+              type="button"
+              onClick={handleDismissAwaiting}
+              className="text-sm font-medium text-blue-700 hover:underline"
+            >
+              {t("dismissForToday")}
+            </button>
           </div>
           {awaitingCodes.length === 1 ? (
             <Link
@@ -592,128 +639,6 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
-      </section>
-
-      {/* Recent Transactions */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-navy font-heading">
-            {t("recentTransactions")}
-          </h2>
-          <Link
-            href="/dashboard/transfer/history"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            {t("viewAll")}
-          </Link>
-        </div>
-        {recentItems.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-card">
-            <div className="mx-auto w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-              <svg
-                className="w-7 h-7 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-            <p className="text-slate-600 font-medium mb-1">
-              {t("noTransactionsYet")}
-            </p>
-            <p className="text-sm text-slate-500 mb-6">
-              {t("startByTransferring")}
-            </p>
-            <Link
-              href="/dashboard/transfer"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg font-medium bg-primary text-white hover:bg-primary-dark transition-colors"
-            >
-              {t("makeTransfer")}
-            </Link>
-          </div>
-        ) : (
-          <DataTable
-            columns={[
-              {
-                key: "tx_ref",
-                header: t("reference"),
-                render: (row) => (
-                  <Link
-                    href={`/dashboard/receipt/${row.tx_ref}`}
-                    className="font-medium text-primary hover:underline font-mono text-xs"
-                  >
-                    {String(row.tx_ref).slice(0, 12)}...
-                  </Link>
-                ),
-              },
-              {
-                key: "amount",
-                header: t("amount"),
-                render: (row) => (
-                  <span
-                    className={
-                      row.tx_type === "credit"
-                        ? "text-emerald-600 font-semibold"
-                        : "text-red-600 font-semibold"
-                    }
-                  >
-                    {row.tx_type === "credit" ? "+" : "-"}
-                    {row.principal.toFixed(2)} {row.currency}
-                  </span>
-                ),
-              },
-              {
-                key: "tx_type",
-                header: t("type"),
-                render: (row) => <span className="capitalize">{row.tx_type}</span>,
-              },
-              {
-                key: "status",
-                header: t("status"),
-                render: (row) => (
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                      (row as { status?: string }).status === "processing"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-emerald-100 text-emerald-700"
-                    }`}
-                  >
-                    {(row as { status?: string }).status === "processing"
-                      ? t("processing")
-                      : t("completed")}
-                  </span>
-                ),
-              },
-              {
-                key: "tx_date",
-                header: t("date"),
-                render: (row) => formatDate(row.tx_date),
-              },
-              {
-                key: "slip",
-                header: "",
-                render: (row) => (
-                  <Link
-                    href={`/dashboard/receipt/${row.tx_ref}`}
-                    className="text-primary text-sm font-medium hover:underline"
-                  >
-                    {t("viewSlip")}
-                  </Link>
-                ),
-              },
-            ]}
-            data={recentItems}
-            keyExtractor={(t) => t.tx_ref}
-            emptyMessage={t("noTransactionsYet")}
-            striped
-          />
-        )}
       </section>
     </div>
   );

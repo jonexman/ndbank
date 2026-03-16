@@ -11,6 +11,7 @@ interface ActivityRow {
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;
+  attempted_identifier?: string | null;
 }
 
 export default function UserActivityPage() {
@@ -91,7 +92,7 @@ export default function UserActivityPage() {
 
       <Card>
         <p className="text-sm text-slate-600 mb-4">
-          Login and logout events with IP address. Last 100 entries.
+          Login attempts (success and failed), logout events, with IP address. Last 100 entries.
         </p>
         {data.activity.length === 0 ? (
           <p className="py-12 text-center text-slate-500">No activity recorded yet.</p>
@@ -102,15 +103,21 @@ export default function UserActivityPage() {
               {
                 key: "event_type",
                 header: "Event",
-                render: (r) => (
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                      r.event_type === "login" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
-                    }`}
-                  >
-                    {r.event_type}
-                  </span>
-                ),
+                render: (r) => {
+                  const style =
+                    r.event_type === "login"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : r.event_type === "login_failed"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-slate-100 text-slate-700";
+                  const label =
+                    r.event_type === "login_failed" ? "Login failed" : r.event_type;
+                  return (
+                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${style}`}>
+                      {label}
+                    </span>
+                  );
+                },
               },
               {
                 key: "ip_address",

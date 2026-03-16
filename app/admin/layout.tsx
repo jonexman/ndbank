@@ -109,6 +109,7 @@ const adminNav: NavItem[] = [
     label: "Tools",
     icon: "tools",
     children: [
+      { href: "/admin/activity", label: "Activity" },
       { href: "/admin/info", label: "Info" },
       { href: "/admin/settings", label: "Settings" },
     ],

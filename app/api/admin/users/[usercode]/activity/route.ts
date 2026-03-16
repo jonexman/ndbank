@@ -20,15 +20,29 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data } = await supabase
+  const fields = "id, event_type, ip_address, user_agent, created_at, attempted_identifier";
+
+  const { data: byUser } = await supabase
     .from("user_activity_log")
-    .select("id, event_type, ip_address, user_agent, created_at")
+    .select(fields)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
+  const { data: byEmail } = await supabase
+    .from("user_activity_log")
+    .select(fields)
+    .eq("attempted_identifier", user.email)
+    .eq("event_type", "login_failed")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const combined = [...(byUser ?? []), ...(byEmail ?? [])]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 100);
+
   return NextResponse.json({
     user: { usercode: user.usercode, full_name: user.full_name },
-    activity: data ?? [],
+    activity: combined,
   });
 }

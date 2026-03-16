@@ -25,6 +25,7 @@ export async function GET() {
     recipient_account: r.recipient_account,
     fee_amount: Number(r.fee_amount ?? 0),
     code_types: codeTypes,
+    expires_at: r.expires_at,
   }));
 
   return NextResponse.json({ awaiting });
