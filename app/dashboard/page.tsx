@@ -237,6 +237,8 @@ export default function DashboardPage() {
     amount: number;
     currency: string;
     tx_region: string;
+    recipient_account?: string;
+    fee_amount?: number;
     code_types: Array<{ type: string; order: number }>;
   }>>([]);
 
@@ -368,24 +370,52 @@ export default function DashboardPage() {
       />
 
       {awaitingCodes.length > 0 && (
-        <Link
-          href={awaitingCodes[0].tx_region === "international"
-            ? `/dashboard/transfer/international?tx_ref=${encodeURIComponent(awaitingCodes[0].tx_ref)}`
-            : `/dashboard/transfer/local?tx_ref=${encodeURIComponent(awaitingCodes[0].tx_ref)}`}
-          className="block mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100 transition-colors"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span className="font-medium">
-                {awaitingCodes.length === 1 ? t("completeYourTransfer") : t("completeYourTransfers", { count: awaitingCodes.length })}
-              </span>
-            </div>
-            <span className="text-sm font-medium">{t("enterCode")} →</span>
+        <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-800">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span className="font-medium">
+              {awaitingCodes.length === 1 ? t("completeYourTransfer") : t("completeYourTransfers", { count: awaitingCodes.length })}
+            </span>
           </div>
-        </Link>
+          {awaitingCodes.length === 1 ? (
+            <Link
+              href={awaitingCodes[0].tx_region === "international"
+                ? `/dashboard/transfer/international?tx_ref=${encodeURIComponent(awaitingCodes[0].tx_ref)}`
+                : `/dashboard/transfer/local?tx_ref=${encodeURIComponent(awaitingCodes[0].tx_ref)}`}
+              className="flex items-center justify-between gap-4 py-2 rounded-lg hover:bg-blue-100/80 transition-colors"
+            >
+              <span className="text-sm">
+                {awaitingCodes[0].amount.toFixed(2)} {awaitingCodes[0].currency}
+                {awaitingCodes[0].recipient_account ? ` → ${awaitingCodes[0].recipient_account}` : ""}
+              </span>
+              <span className="text-sm font-medium">{t("enterCode")} →</span>
+            </Link>
+          ) : (
+            <ul className="space-y-2">
+              {awaitingCodes.map((item) => (
+                <li key={item.tx_ref}>
+                  <Link
+                    href={item.tx_region === "international"
+                      ? `/dashboard/transfer/international?tx_ref=${encodeURIComponent(item.tx_ref)}`
+                      : `/dashboard/transfer/local?tx_ref=${encodeURIComponent(item.tx_ref)}`}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3 px-3 rounded-lg bg-white/60 hover:bg-white border border-blue-100 transition-colors"
+                  >
+                    <div className="text-sm">
+                      <span className="font-medium">{item.amount.toFixed(2)} {item.currency}</span>
+                      {item.recipient_account && (
+                        <span className="text-blue-700/90"> → {item.recipient_account}</span>
+                      )}
+                      <span className="ml-2 text-xs text-blue-600/80 capitalize">({item.tx_region})</span>
+                    </div>
+                    <span className="text-sm font-medium shrink-0">{t("enterCode")} →</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {pendingTransfers.length > 0 && (

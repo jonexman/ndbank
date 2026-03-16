@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     tx_type: "debit" as const,
     tx_date: p.created_at,
     currency: p.currency,
-    status: "processing" as const,
+    status: "awaiting_admin" as const,
     recipient_account: p.recipient_account,
   }));
 

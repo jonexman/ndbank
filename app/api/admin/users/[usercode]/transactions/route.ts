@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdmin, canAccessUser } from "@/lib/admin/auth";
 import { getUserByUsercode, getTransactionsByUserId, getTransactionsByAccountId, getAccountsByUserId } from "@/lib/supabase/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -7,7 +7,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ usercode: string }> }
 ) {
-  const { authorized, supabase } = await requireAdmin();
+  const { authorized, supabase, isSuperAdmin } = await requireAdmin();
   if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -16,6 +16,9 @@ export async function GET(
   const user = await getUserByUsercode(supabase, usercode);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  if (!canAccessUser(isSuperAdmin, user.roles as string[] | null)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);

@@ -106,17 +106,20 @@ export default function TransferHistoryPage() {
           {
             key: "status",
             header: t("status"),
-            render: (row) => (
-              <span
-                className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                  (row as { status?: string }).status === "processing"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-emerald-100 text-emerald-700"
-                }`}
-              >
-                {(row as { status?: string }).status === "processing" ? t("processing") : t("completed")}
-              </span>
-            ),
+            render: (row) => {
+              const status = (row as { status?: string }).status;
+              const isPending = status === "processing" || status === "awaiting_admin";
+              const label = status === "awaiting_admin" ? t("awaitingAdminConfirmation") : isPending ? t("processing") : t("completed");
+              return (
+                <span
+                  className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                    isPending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  {label}
+                </span>
+              );
+            },
           },
           { key: "tx_date", header: t("date"), render: (row) => new Date(row.tx_date).toLocaleString(locale === "ar" ? "ar" : "en-US") },
           {

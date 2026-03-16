@@ -27,6 +27,7 @@ export default function ManageAccountsPage() {
   const params = useParams();
   const usercode = params.usercode as string;
   const [dataLoading, setDataLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
   const [data, setData] = useState<{
     user: { id: string; usercode: string; full_name: string; bank_number: string | null };
     accounts: AccountRow[];
@@ -57,11 +58,17 @@ export default function ManageAccountsPage() {
 
   useEffect(() => {
     setDataLoading(true);
+    setForbidden(false);
     fetch(`/api/admin/users/${usercode}/accounts`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json();
+        return { ...d, _status: r.status };
+      })
       .then((d) => {
-        if (d.error) setData(null);
-        else setData(d);
+        if (d.error) {
+          setData(null);
+          setForbidden(d._status === 403);
+        } else setData(d);
       })
       .catch(() => setData(null))
       .finally(() => setDataLoading(false));
@@ -190,7 +197,15 @@ export default function ManageAccountsPage() {
   if (!data) {
     return (
       <div>
-        <PageHeader title="Manage Accounts" backHref="/admin/users" subtitle="User not found." />
+        <PageHeader
+          title="Manage Accounts"
+          backHref="/admin/users"
+          subtitle={
+            forbidden
+              ? "You don't have permission to view this user."
+              : "User not found."
+          }
+        />
       </div>
     );
   }

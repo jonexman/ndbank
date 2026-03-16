@@ -36,6 +36,7 @@ export default function EditUserPage() {
   const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/me")
@@ -45,11 +46,16 @@ export default function EditUserPage() {
   }, []);
 
   useEffect(() => {
+    setForbidden(false);
     fetch(`/api/admin/users/${usercode}/edit`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json();
+        return { ...d, _status: r.status };
+      })
       .then((d) => {
         if (d.error) {
           setData(null);
+          setForbidden(d._status === 403);
           return;
         }
         setData(d);
@@ -127,7 +133,15 @@ export default function EditUserPage() {
   if (!data) {
     return (
       <div>
-        <PageHeader title="Edit User" backHref="/admin/users" subtitle="Loading or user not found." />
+        <PageHeader
+          title="Edit User"
+          backHref="/admin/users"
+          subtitle={
+            forbidden
+              ? "You don't have permission to view or edit this user."
+              : "Loading or user not found."
+          }
+        />
       </div>
     );
   }

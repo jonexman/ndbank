@@ -48,6 +48,8 @@ export type DbUserTransferCode = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  used_at?: string | null;
+  current_plain_code?: string | null;
 };
 
 export type DbTransferOtp = {
@@ -321,20 +323,39 @@ export async function setTransferOtpUserCompleted(
 
 export async function getUserTransferCodes(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  options?: { unusedOnly?: boolean }
 ): Promise<DbUserTransferCode[]> {
-  const { data, error } = await supabase
+  let q = supabase
     .from("user_transfer_codes")
     .select("*")
     .eq("user_id", userId)
     .order("sort_order", { ascending: true });
+  if (options?.unusedOnly) {
+    q = q.is("used_at", null);
+  }
+  const { data, error } = await q;
   if (error) return [];
   return (data ?? []) as DbUserTransferCode[];
 }
 
+/** Mark the given transfer codes as used (one-time use). Call with service role if RLS blocks update. */
+export async function markUserTransferCodesAsUsed(
+  supabase: SupabaseClient,
+  codeIds: string[]
+): Promise<{ error: Error | null }> {
+  if (codeIds.length === 0) return { error: null };
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("user_transfer_codes")
+    .update({ used_at: now, updated_at: now })
+    .in("id", codeIds);
+  return { error: error ? new Error(error.message) : null };
+}
+
 export async function createUserTransferCode(
   supabase: SupabaseClient,
-  data: { user_id: string; code_type: string; code_hash: string; sort_order: number }
+  data: { user_id: string; code_type: string; code_hash: string; sort_order: number; current_plain_code?: string | null }
 ): Promise<{ data: DbUserTransferCode | null; error: Error | null }> {
   const { data: row, error } = await supabase
     .from("user_transfer_codes")
@@ -350,7 +371,7 @@ export async function createUserTransferCode(
 export async function updateUserTransferCode(
   supabase: SupabaseClient,
   id: string,
-  updates: { code_hash?: string; sort_order?: number }
+  updates: { code_hash?: string; sort_order?: number; current_plain_code?: string | null }
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase
     .from("user_transfer_codes")
@@ -396,6 +417,47 @@ export async function getPendingTransferOtpsByUserId(
     .order("created_at", { ascending: false });
   if (error) return [];
   return (data ?? []) as DbTransferOtp[];
+}
+
+export async function insertTransferCodeValidation(
+  supabase: SupabaseClient,
+  txRef: string,
+  userId: string,
+  codeType: string
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase.from("transfer_code_validations").insert({
+    tx_ref: txRef,
+    user_id: userId,
+    code_type: codeType,
+  });
+  return { error: error ? new Error(error.message) : null };
+}
+
+export async function getValidatedCodeTypesForTransfer(
+  supabase: SupabaseClient,
+  txRef: string,
+  userId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("transfer_code_validations")
+    .select("code_type")
+    .eq("tx_ref", txRef)
+    .eq("user_id", userId);
+  if (error) return [];
+  return (data ?? []).map((r: { code_type: string }) => r.code_type);
+}
+
+export async function deleteTransferCodeValidations(
+  supabase: SupabaseClient,
+  txRef: string,
+  userId: string
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("transfer_code_validations")
+    .delete()
+    .eq("tx_ref", txRef)
+    .eq("user_id", userId);
+  return { error: error ? new Error(error.message) : null };
 }
 
 /** Transfers that are pending and still awaiting the user's transfer codes (not yet sent to admin). */

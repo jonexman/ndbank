@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdmin, canAccessUser } from "@/lib/admin/auth";
 import { getUserByUsercode } from "@/lib/supabase/db";
 
 const ALLOWED_ROLES = ["member", "administrator", "super-admin"];
@@ -24,6 +24,9 @@ export async function POST(
   const user = await getUserByUsercode(supabase, usercode);
   if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+  if (!canAccessUser(isSuperAdmin, user.roles as string[] | null)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (!Array.isArray(roles)) {

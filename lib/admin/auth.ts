@@ -41,3 +41,10 @@ export async function requireSuperAdmin() {
     authorized: result.authorized && result.isSuperAdmin,
   };
 }
+
+/** Admins (non–super-admin) must not view or edit super-admin users. */
+export function canAccessUser(adminIsSuperAdmin: boolean, targetUserRoles: string[] | null): boolean {
+  const roles = targetUserRoles ?? [];
+  if (roles.includes("super-admin")) return adminIsSuperAdmin;
+  return true;
+}

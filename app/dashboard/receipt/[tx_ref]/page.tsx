@@ -96,7 +96,8 @@ export default function ReceiptPage() {
   }
 
   const txStatus = data.status ?? "completed";
-  const isProcessing = txStatus === "pending" || txStatus === "processing";
+  const isAwaitingAdmin = txStatus === "awaiting_admin";
+  const isProcessing = txStatus === "pending" || txStatus === "processing" || isAwaitingAdmin;
   const fee = 0;
   const amountPaid = data.principal + fee;
 
@@ -136,7 +137,7 @@ export default function ReceiptPage() {
               isProcessing ? "text-amber-600" : "text-emerald-600"
             }`}
           >
-            {isProcessing ? "Processing" : "Completed"}
+            {isAwaitingAdmin ? "Awaiting admin confirmation" : isProcessing ? "Processing" : "Completed"}
           </p>
         </div>
 
@@ -149,11 +150,18 @@ export default function ReceiptPage() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-slate-800">{isProcessing ? "Payment processing" : "Payment successful"}</p>
+              <p className="font-medium text-slate-800">
+              {isAwaitingAdmin ? "Awaiting admin confirmation" : isProcessing ? "Payment processing" : "Payment successful"}
+            </p>
               <p className="text-sm text-slate-500">{new Date(data.tx_date).toLocaleString()}</p>
             </div>
           </div>
-          {isProcessing && (
+          {isAwaitingAdmin && (
+            <p className="mt-4 text-sm text-slate-500">
+              You have completed your part. The transfer is pending admin approval and will be processed shortly.
+            </p>
+          )}
+          {isProcessing && !isAwaitingAdmin && (
             <p className="mt-4 text-sm text-slate-500">
               The recipient account is expected to be credited within 5 minutes to 48 hours, subject to notification by the bank.
             </p>
@@ -228,7 +236,7 @@ export default function ReceiptPage() {
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Status</p>
             <p className={`font-semibold ${isProcessing ? "text-amber-600" : "text-emerald-600"}`}>
-              {isProcessing ? "Processing" : "Completed"}
+              {isAwaitingAdmin ? "Awaiting admin confirmation" : isProcessing ? "Processing" : "Completed"}
             </p>
           </div>
         </div>

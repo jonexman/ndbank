@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/auth";
+import { requireAdmin, canAccessUser } from "@/lib/admin/auth";
 
 export async function GET() {
   const { authorized, supabase, isSuperAdmin } = await requireAdmin();
@@ -16,6 +16,8 @@ export async function GET() {
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 
+  const visibleUsers = (users ?? []).filter((u) => canAccessUser(isSuperAdmin, u.roles as string[] | null));
+
   const { data: accounts } = await supabase.from("accounts").select("user_id, balance, currency");
   const accountMap = new Map<string, { balance: number; currency: string }>();
   for (const a of accounts ?? []) {
@@ -25,7 +27,7 @@ export async function GET() {
     }
   }
 
-  const formatted = (users ?? []).map((u) => {
+  const formatted = visibleUsers.map((u) => {
     const roles = (u.roles ?? ["member"]) as string[];
     const sanitizedRoles = isSuperAdmin ? roles : roles.filter((r) => r !== "super-admin");
     return {

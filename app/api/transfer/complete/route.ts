@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getUserById,
   getAccountByUserId,
@@ -7,8 +8,9 @@ import {
   updateTransferOtpStatus,
   setTransferOtpUserCompleted,
   getUserTransferCodes,
+  updateUserTransferCode,
 } from "@/lib/supabase/db";
-import { verifyCode } from "@/lib/auth/codes";
+import { verifyCode, generateAndHashCode } from "@/lib/auth/codes";
 
 type CompleteBody = {
   tx_ref: string;
@@ -93,9 +95,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await setTransferOtpUserCompleted(supabase, otpRow.id);
+  // RLS only allows admins to UPDATE transfer_otps; use service role so user can complete their step
+  const adminSupabase = createAdminClient();
+  const updateResult = adminSupabase
+    ? await setTransferOtpUserCompleted(adminSupabase, otpRow.id)
+    : { error: new Error("Server configuration error") };
+  if (updateResult.error) {
+    return NextResponse.json(
+      { status: "error", message: "Failed to submit transfer. Please try again." },
+      { status: 500 }
+    );
+  }
 
-  // Transfer remains pending until admin approves; do not execute process_transfer here
+  if (adminSupabase && userCodes.length > 0) {
+    for (const uc of userCodes) {
+      const { plain, hash } = generateAndHashCode(6);
+      const { error } = await updateUserTransferCode(adminSupabase, uc.id, {
+        code_hash: hash,
+        current_plain_code: plain,
+      });
+      if (error) {
+        return NextResponse.json(
+          { status: "error", message: "Transfer submitted but failed to rotate codes. Please contact support." },
+          { status: 500 }
+        );
+      }
+    }
+  }
+
   return NextResponse.json(
     {
       status: "success",

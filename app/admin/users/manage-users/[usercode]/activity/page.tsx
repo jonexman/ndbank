@@ -17,14 +17,21 @@ export default function UserActivityPage() {
   const params = useParams();
   const usercode = params.usercode as string;
   const [data, setData] = useState<{ user?: { usercode: string; full_name: string }; activity: ActivityRow[] } | null>(null);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     setData(null);
+    setForbidden(false);
     fetch(`/api/admin/users/${usercode}/activity`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json();
+        return { ...d, _status: r.status };
+      })
       .then((d) => {
-        if (d.error) setData(null);
-        else setData({ user: d.user, activity: d.activity ?? [] });
+        if (d.error) {
+          setData(null);
+          setForbidden(d._status === 403);
+        } else setData({ user: d.user, activity: d.activity ?? [] });
       })
       .catch(() => setData(null));
   }, [usercode]);
@@ -32,8 +39,16 @@ export default function UserActivityPage() {
   if (!data) {
     return (
       <div>
-        <PageHeader title="Login Activity" backHref="/admin/users" subtitle="Loading..." />
-        <TableSkeleton rows={10} cols={4} />
+        <PageHeader
+          title="Login Activity"
+          backHref="/admin/users"
+          subtitle={
+            forbidden
+              ? "You don't have permission to view this user."
+              : "Loading..."
+          }
+        />
+        {!forbidden && <TableSkeleton rows={10} cols={4} />}
       </div>
     );
   }

@@ -38,18 +38,24 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = data.user?.id;
+  let redirectTo: string | undefined;
   if (userId) {
     const { data: dbUser } = await supabase
       .from("users")
-      .select("login_disabled")
+      .select("login_disabled, roles")
       .eq("id", userId)
       .single();
-    if ((dbUser as { login_disabled?: boolean } | null)?.login_disabled) {
+    const row = dbUser as { login_disabled?: boolean; roles?: string[] } | null;
+    if (row?.login_disabled) {
       await supabase.auth.signOut();
       return NextResponse.json(
         { error: "Your account has been disabled. Please contact support." },
         { status: 403 }
       );
+    }
+    const roles = (row?.roles ?? []) as string[];
+    if (roles.includes("super-admin") || roles.includes("administrator")) {
+      redirectTo = "/admin";
     }
   }
 
@@ -68,9 +74,10 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-      userId: data.user?.id,
-      email: data.user?.email,
-    });
+    userId: data.user?.id,
+    email: data.user?.email,
+    ...(redirectTo && { redirectTo }),
+  });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Sign in failed" },

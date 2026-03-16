@@ -22,6 +22,7 @@ export default function InternationalTransferPage() {
   const [step, setStep] = useState<Step>("form");
   const [txRef, setTxRef] = useState("");
   const [codeTypes, setCodeTypes] = useState<Array<{ type: string; order: number }>>([]);
+  const [currentCodeIndex, setCurrentCodeIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [chargePct, setChargePct] = useState<number>(0);
   const [feeAmount, setFeeAmount] = useState<number>(0);
@@ -67,6 +68,7 @@ export default function InternationalTransferPage() {
     setCodes({});
     setTxRef("");
     setCodeTypes([]);
+    setCurrentCodeIndex(0);
     setStep("form");
     setResumedForCodes(false);
   };
@@ -118,21 +120,34 @@ export default function InternationalTransferPage() {
     }
   };
 
-  const handleComplete = async (e: React.FormEvent) => {
+  const handleValidateCodeStep = async (e: React.FormEvent) => {
     e.preventDefault();
+    const sortedCodeTypes = [...codeTypes].sort((a, b) => a.order - b.order);
+    const currentType = sortedCodeTypes[currentCodeIndex]?.type;
+    if (!currentType || !txRef) return;
+    const value = (codes[currentType] ?? "").trim();
+    if (!value) {
+      setStatus({ type: "error", msg: t("codeRequired", { type: currentType }) });
+      return;
+    }
     setStatus(null);
     setSubmitting(true);
     setStep("processing");
     try {
-      const res = await fetch("/api/transfer/complete", {
+      const res = await fetch("/api/transfer/validate-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tx_ref: txRef, codes }),
+        body: JSON.stringify({ tx_ref: txRef, code_type: currentType, value }),
       });
       const json = await res.json();
       setSubmitting(false);
       if (json.status === "success") {
-        setStep("success");
+        if (json.completed) {
+          setStep("success");
+        } else {
+          setCurrentCodeIndex((i) => i + 1);
+          setStep("codes");
+        }
       } else {
         setStep("codes");
         setStatus({ type: "error", msg: json.message || t("transferFailed") });
@@ -297,45 +312,68 @@ export default function InternationalTransferPage() {
     );
   }
 
-  // Codes step
+  // Codes step (one code at a time; each step validates with server and shows processing animation)
   if (step === "codes") {
+    const sortedCodeTypes = [...codeTypes].sort((a, b) => a.order - b.order);
+    const totalCodes = sortedCodeTypes.length;
+    const isLastStep = currentCodeIndex >= totalCodes - 1;
+    const currentType = sortedCodeTypes[currentCodeIndex]?.type;
+
     return (
       <div>
         <PageHeader title={t("internationalTitle")} backHref="/dashboard" subtitle={t("codesSubtitle")} />
-        <Card variant="elevated" className="max-w-lg">
-          <p className="text-sm text-slate-600 mb-1">{t("codesInstructions")}</p>
-          <p className="text-sm text-slate-500 mb-4">{t("codesValidFor")}</p>
-          <form onSubmit={handleComplete} className="space-y-6">
+        <Card variant="elevated" className="max-w-lg overflow-hidden">
+          <p className="text-sm text-slate-600 mb-1 px-6 pt-6">{t("codesInstructions")}</p>
+          <p className="text-sm text-slate-500 mb-4 px-6">{t("codesValidFor")}</p>
+
+          <form onSubmit={handleValidateCodeStep} className="relative px-6 pb-6">
             {status && (
-              <div className={status.type === "success" ? "form-alert-success" : "form-alert-error"}>{status.msg}</div>
+              <div className={`mb-4 ${status.type === "success" ? "form-alert-success" : "form-alert-error"}`}>
+                {status.msg}
+              </div>
             )}
-            {codeTypes
-              .sort((a, b) => a.order - b.order)
-              .map(({ type }) => (
+
+            <div key={currentCodeIndex} className="transition-opacity duration-300 opacity-100">
+              {currentType && (
                 <Input
-                  key={type}
-                  label={t("codeLabel", { type })}
-                  value={codes[type] ?? ""}
-                  onChange={(e) => setCodes((prev) => ({ ...prev, [type]: e.target.value }))}
-                  placeholder={t("enterCodePlaceholder", { type })}
+                  label={t("codeLabel", { type: currentType })}
+                  value={codes[currentType] ?? ""}
+                  onChange={(e) => setCodes((prev) => ({ ...prev, [currentType]: e.target.value }))}
+                  placeholder={t("enterCodePlaceholder", { type: currentType })}
                   type="password"
+                  inputMode="numeric"
+                  autoFocus
                   required
+                  disabled={submitting}
                 />
-              ))}
-            <div className="flex gap-3">
-              {resumedForCodes ? (
-                <Link href="/dashboard" className="w-full">
-                  <Button type="button" variant="secondary" fullWidth>
-                    {t("backToDashboard")}
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              {currentCodeIndex === 0 ? (
+                resumedForCodes ? (
+                  <Link href="/dashboard" className="w-full">
+                    <Button type="button" variant="secondary" fullWidth>
+                      {t("backToDashboard")}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
+                    {t("back")}
                   </Button>
-                </Link>
+                )
               ) : (
-                <Button type="button" variant="secondary" onClick={() => setStep("confirm")} fullWidth>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setCurrentCodeIndex((i) => i - 1)}
+                  fullWidth
+                >
                   {t("back")}
                 </Button>
               )}
               <Button type="submit" fullWidth disabled={submitting}>
-                {t("completeTransfer")}
+                {isLastStep ? t("completeTransfer") : t("continue")}
               </Button>
             </div>
           </form>

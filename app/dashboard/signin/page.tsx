@@ -37,10 +37,12 @@ export default function SignInPage() {
         setError(data.error ?? "Sign in failed");
         return;
       }
-      const target =
+      const fromServer = (data as { redirectTo?: string }).redirectTo;
+      const urlRedirect =
         redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
           ? redirectTo
-          : "/dashboard";
+          : undefined;
+      const target = fromServer ?? urlRedirect ?? "/dashboard";
       window.location.href = target;
     } finally {
       setLoading(false);

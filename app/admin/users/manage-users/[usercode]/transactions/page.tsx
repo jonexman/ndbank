@@ -34,20 +34,29 @@ export default function ClientTransactionsPage() {
   const usercode = params.usercode as string;
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ user?: { usercode: string; full_name: string }; transactions: TxRow[]; pending: PendingRow[]; hasMore?: boolean } | null>(null);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     setData(null);
     setPage(1);
+    setForbidden(false);
   }, [usercode]);
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/admin/users/${usercode}/transactions?limit=${PAGE_SIZE}&page=${page}`).then((r) => r.json()),
-      fetch(`/api/admin/users/${usercode}/accounts`).then((r) => r.json()),
+      fetch(`/api/admin/users/${usercode}/transactions?limit=${PAGE_SIZE}&page=${page}`).then(async (r) => {
+        const d = await r.json();
+        return { ...d, _status: r.status };
+      }),
+      fetch(`/api/admin/users/${usercode}/accounts`).then(async (r) => {
+        const d = await r.json();
+        return { ...d, _status: r.status };
+      }),
     ])
       .then(([txRes, accRes]) => {
-        if (txRes.error) {
+        if (txRes.error || accRes.error) {
           setData(null);
+          setForbidden(txRes._status === 403 || accRes._status === 403);
           return;
         }
         setData({
@@ -63,7 +72,15 @@ export default function ClientTransactionsPage() {
   if (!data) {
     return (
       <div>
-        <PageHeader title="Transactions" backHref="/admin/users" subtitle="Loading or user not found." />
+        <PageHeader
+          title="Transactions"
+          backHref="/admin/users"
+          subtitle={
+            forbidden
+              ? "You don't have permission to view this user."
+              : "Loading or user not found."
+          }
+        />
       </div>
     );
   }
