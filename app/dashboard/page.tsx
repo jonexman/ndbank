@@ -302,6 +302,7 @@ export default function DashboardPage() {
   }, [userId]);
 
   const t = useTranslations("clientDashboard");
+  const tCommon = useTranslations("common");
   const getGreeting = useGreeting(data?.user?.firstname ?? "");
   const actions = useQuickActions();
 
@@ -312,7 +313,7 @@ export default function DashboardPage() {
   if (data?.error && !data?.user) {
     return (
       <div>
-        <PageHeader title="E-Banking" subtitle="Dashboard" />
+        <PageHeader title={t("pageTitle")} />
         <div className="p-4 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
           <p className="font-medium">{data.error}</p>
           <p className="text-sm mt-2">
@@ -327,7 +328,7 @@ export default function DashboardPage() {
   if (isLoading || !data?.user) {
     return (
       <div>
-        <PageHeader title="E-Banking" subtitle="Loading..." />
+        <PageHeader title={t("pageTitle")} subtitle={tCommon("loading")} />
         <div className="mb-10">
           <div className="rounded-2xl bg-slate-200 animate-pulse h-40" />
         </div>

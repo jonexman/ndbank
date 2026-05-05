@@ -358,7 +358,7 @@ export default function SignupPage() {
             />
           </div>
 
-          <SectionHeading>Bank System Info</SectionHeading>
+          <SectionHeading>System info</SectionHeading>
           <div className="grid sm:grid-cols-2 gap-6">
             <Select
               label="Preferred Currency"

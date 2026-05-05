@@ -1,5 +1,5 @@
 export const siteConfig = {
-  title: "Monzo Bank UK",
+  title: "Monzo UK",
   description:
     "Digital banking platform for secure payments, deposits, loans and investment services.",
   phone: "+44 800 123 4567",

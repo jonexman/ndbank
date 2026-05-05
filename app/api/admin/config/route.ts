@@ -15,7 +15,7 @@ const TRANSFER_CODES = [
 
 const SITE_OPTIONS = [
   { key: "site_title", value: "Alpha Bank" },
-  { key: "site_description", value: "E-Banking" },
+  { key: "site_description", value: "Online" },
 ];
 
 export async function GET() {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { PageHeader, PageLoader } from "@/components/ui";
 import { siteConfig } from "@/lib/siteConfig";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useTranslations } from "next-intl";
 
 export default function ReceiptPage() {
   const params = useParams();
@@ -24,6 +25,7 @@ export default function ReceiptPage() {
   } | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [copiedRef, setCopiedRef] = useState(false);
+  const tCommon = useTranslations("common");
 
   useEffect(() => {
     if (!txRef || !userId) {
@@ -227,7 +229,7 @@ export default function ReceiptPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Payment method</p>
-            <p className="font-medium">{siteConfig.title} E-Banking</p>
+            <p className="font-medium">{siteConfig.title} · {tCommon("online")}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Transaction date</p>

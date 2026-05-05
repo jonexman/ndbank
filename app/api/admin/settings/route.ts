@@ -4,7 +4,7 @@ import { requireSuperAdmin } from "@/lib/admin/auth";
 const DEFAULT_OPTIONS: Record<string, string> = {
   site_title: "Alpha Bank",
   site_tagline: "",
-  site_description: "E-Banking",
+  site_description: "Online",
   admin_email: "",
   smtp_host: "",
   smtp_port: "",

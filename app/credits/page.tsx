@@ -1,6 +1,8 @@
 import { SectionLayout } from "@/components/SectionLayout";
+import { getTranslations } from "next-intl/server";
 
-export default function CreditsPage() {
+export default async function CreditsPage() {
+  const t = await getTranslations("depositsPage");
   return (
     <SectionLayout
       eyebrow="Credits"
@@ -22,7 +24,7 @@ export default function CreditsPage() {
         </p>
       </div>
       <a href="/dashboard" className="inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold bg-primary hover:bg-primary-dark text-white transition-colors">
-        Go to E-Banking
+        {t("goToEBanking")}
       </a>
     </SectionLayout>
   );

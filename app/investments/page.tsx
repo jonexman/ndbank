@@ -14,7 +14,7 @@ export default function InvestmentsPage() {
     <SectionLayout
       eyebrow="Investments Growth"
       title={`${siteConfig.title} Investments`}
-      subtitle="Investment group delivers a wide range of Investment Banking products and services."
+      subtitle="Investment group delivers a wide range of investment products and services."
     >
       <div className="max-w-3xl space-y-6 text-gray-600 mb-10">
         <div>

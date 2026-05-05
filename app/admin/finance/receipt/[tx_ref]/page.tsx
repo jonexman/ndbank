@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { PageHeader, PageLoader } from "@/components/ui";
 import { siteConfig } from "@/lib/siteConfig";
+import { useTranslations } from "next-intl";
 
 export default function AdminReceiptPage() {
   const params = useParams();
@@ -22,6 +23,7 @@ export default function AdminReceiptPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedRef, setCopiedRef] = useState(false);
+  const tCommon = useTranslations("common");
 
   useEffect(() => {
     if (!txRef) return;
@@ -183,7 +185,7 @@ export default function AdminReceiptPage() {
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Payment method</p>
-            <p className="font-medium">{siteConfig.title} E-Banking</p>
+            <p className="font-medium">{siteConfig.title} · {tCommon("online")}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Transaction date</p>

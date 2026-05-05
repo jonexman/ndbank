@@ -156,7 +156,7 @@ export default function GeneralSettingsPage() {
               label="Tagline"
               value={form.site_tagline}
               onChange={(e) => setForm({ ...form, site_tagline: e.target.value })}
-              placeholder="e.g. E-Banking"
+              placeholder="e.g. Online"
               maxLength={TAGLINE_MAX}
               error={errors.taglineError}
               hint={!errors.taglineError ? "Short line under the logo or in the header." : undefined}

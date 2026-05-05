@@ -3,7 +3,8 @@
     "signIn": "Sign In",
     "signUp": "Sign Up",
     "signOut": "Sign Out",
-    "eBanking": "E-Banking",
+    "eBanking": "Online",
+    "online": "Online",
     "needHelp": "Need help? Call",
     "skipToContent": "Skip to main content",
     "getStarted": "Get started",
@@ -57,7 +58,7 @@
     "convenienceTitle": "For convenience in the digital age",
     "step1Title": "Come to {title}",
     "step1Text": "Open your first account, get your debit card and access codes straight from your mobile.",
-    "step2Title": "Log in to web banking",
+    "step2Title": "Log in online",
     "step2Text": "Get full control of your transactions and products from your computer.",
     "step3Title": "Get a quick loan",
     "step3Text": "Secure a consumer loan of up to $10,000 online with a fully digital application."
@@ -77,7 +78,7 @@
     "noAccountYet": "Don't have an account?",
     "dontHaveAccount": "Don't have an account?",
     "createAccount": "Create Account",
-    "createAccountSubtitle": "Sign up for your {title} e-banking account",
+    "createAccountSubtitle": "Sign up for your {title} online account",
     "accountCreated": "Account Created",
     "redirectingToDashboard": "Redirecting to dashboard...",
     "creatingAccount": "Creating Account…"
@@ -99,7 +100,7 @@
     "users": "Users"
   },
   "client": {
-    "eBanking": "E-Banking",
+    "eBanking": "Online",
     "visitMainSite": "Visit main site",
     "helpAndSupport": "Help & support",
     "signedInAs": "Signed in as",
@@ -126,6 +127,7 @@
     }
   },
   "clientDashboard": {
+    "pageTitle": "Dashboard",
     "manageAccounts": "Manage your accounts and transactions",
     "pendingTransfer": "pending transfer",
     "pendingTransfers": "pending transfers",
@@ -451,13 +453,13 @@
   },
   "personalPage": {
     "eyebrow": "Personal",
-    "title": "Personal Banking",
+    "title": "Personal",
     "description": "Tailored banking solutions for individuals. Manage your accounts, make payments, and grow your savings with our personal banking services.",
     "openAccount": "Open an account"
   },
   "corporatePage": {
     "eyebrow": "Corporate",
-    "title": "Corporate Banking",
+    "title": "Corporate",
     "description": "Comprehensive banking solutions for businesses. Corporate accounts, bulk payments, trade finance, and dedicated support for your enterprise needs.",
     "cta": "Contact us for corporate services"
   },
@@ -480,12 +482,12 @@
     "saveiAccount": "Save-i Account",
     "saveiAccountText": "Save-i account ties savings or fixed deposit to special insurance for accidental coverage.",
     "telebankingNote": "For urgent banking or inquiries, {title} offers Tele-banking 24/7.",
-    "goToEBanking": "Go to E-Banking"
+    "goToEBanking": "Open dashboard"
   },
   "loansPage": {
     "eyebrow": "Loans",
     "title": "{title} Loan Profile",
-    "subtitle": "{title} makes installment loans at all full-service bank locations.",
+    "subtitle": "{title} makes installment loans at all full-service locations.",
     "intro1": "Auto loans (new or used), recreational vehicles, boats, and leisure vehicles. We also offer Personal Loans for dream vacations or emergencies.",
     "intro2": "Loans can fund personal expenses, homes (mortgage), cars (auto), education (student) or business. Borrowers submit an application; the bank evaluates and sets terms if approved.",
     "availableLoans": "Available Loans",
@@ -512,6 +514,6 @@
     "masterCardDesc": "A global payment network facilitating electronic funds transfers.",
     "visaCard": "Visa Card",
     "visaCardDesc": "Visa operates an extensive payment network for secure electronic transactions.",
-    "applyViaEBanking": "Apply for a card via E-Banking"
+    "applyViaEBanking": "Apply for a card online"
   }
 }
