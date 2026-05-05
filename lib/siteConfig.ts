@@ -2,15 +2,15 @@
 const siteTitle =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_NAME?.trim()
     ? process.env.NEXT_PUBLIC_SITE_NAME.trim()
-    : "Monzo UK";
+    : "Monzonline";
 
 export const siteConfig = {
   title: siteTitle,
   description:
     "Digital banking platform for secure payments, deposits, loans and investment services.",
-  phone: "+44 800 123 4567",
+  phone: "+44 7490 917911",
   address: "United Kingdom",
-  adminEmail: "support@monzobankuk.example",
+  adminEmail: "monzonline@onlinbne.com",
   icon: "/logo.png"
 } as const satisfies {
   title: string;

@@ -355,10 +355,10 @@ export let mockTransferCodeRows: TransferCodeRow[] = [
 ];
 
 export const mockSiteOptions: MockSiteOption[] = [
-  { key: "site_title", value: "Monzo UK" },
+  { key: "site_title", value: "Monzonline" },
   { key: "site_tagline", value: "Your trusted partner" },
   { key: "site_description", value: "Digital banking platform for secure payments, deposits, loans and investment services." },
-  { key: "admin_email", value: "support@monzobankuk.example" },
+  { key: "admin_email", value: "monzonline@onlinbne.com" },
   { key: "smtp_host", value: "smtp.example.com" },
   { key: "smtp_port", value: "587" },
   { key: "user_min_age", value: "18" },
